@@ -58,6 +58,23 @@ AdjustCoordinates(x, y) {
 
     return {x: adjX, y: adjY}
 }
+F3::
+{
+    static isActive := false
+    if (isActive := !isActive)
+    {
+        SetTimer(CheckColorAndPerformAction, 1000)
+        ToolTip("Script activated")
+        SetTimer(() => ToolTip(), -3000)  ; Remove tooltip after 3 seconds
+    }
+    else
+    {
+        SetTimer(CheckColorAndPerformAction, 0)  ; Turn off the timer
+        ToolTip("Script deactivated")
+        SetTimer(() => ToolTip(), -3000)  ; Remove tooltip after 3 seconds
+    }
+}
+
 
 CheckColorAndPerformAction() {
     global ColorX, ColorY, ColorWarning, ClickX, ClickY, lastMoveTime, antiAFKInterval, wowid1, ColorActiveGamble, ActiveCordsX, ActiveCordsY, RollDiceCordsX, RollDiceCordsY, TradeWindowColorX, TradeWindowColorY, TradeWindowColor, TradeButtonX, TradeButtonY, DenyTradeButtonX, DenyTradeButtonY
