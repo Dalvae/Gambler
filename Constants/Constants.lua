@@ -13,7 +13,8 @@ constants.ADDON_VERSION = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")
 constants.ADDON_MEDIA_PATH = [[Interface\AddOns\]] .. constants.ADDON_NAME .. [[\Media]]
 
 constants.PLAYER_NAME = UnitName("player")
-constants.ROLL_MESSAGE_MATCH = RANDOM_ROLL_RESULT:format(constants.PLAYER_NAME, 0, 1, 6):gsub(0, "%%d"):gsub("%-", "%%p"):gsub("%(", "%%p"):gsub("%)", "%%p")
+constants.ROLL_MESSAGE_MATCH = RANDOM_ROLL_RESULT:format(constants.PLAYER_NAME, 0, 1, 6):gsub(0, "%%d"):gsub("%-", "%%p")
+:gsub("%(", "%%p"):gsub("%)", "%%p")
 constants.CHOICES = {
     ["UNDER"] = true,
     ["OVER"] = true,
@@ -27,6 +28,7 @@ constants.MESSAGE_TYPES = {
     ["WON_PAYOUT"] = "You just won %s! Trade me or wait till i trade you.",
     ["UNDER_MIN_BET"] = "You're trying to bet %s which is under the minimum Bet that is currently: %s!",
     ["OVER_MAX_BET"] = "You're about to bet %s even though the max allowed Bet is currently: %s!",
+    ["PENDING_PAYOUT"] = "I owe you %s. Trade me anytime and I'll give it back to you.",
     ["RULES1"] = "Welcome, %s!, Casino Rules (Guess the dice total):",
     ["RULES2"] = "Over 7 / Under 7: Win x2",
     ["RULES3"] = "Exactly 7: Win x4",

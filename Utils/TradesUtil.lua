@@ -53,23 +53,45 @@ local function newTrade()
     }
 end
 
-local function updateTrade(_, event)
+local function updateTrade(_, event, playerAccepted, targetAccepted)
     local bet = tonumber(GetTargetTradeMoney()) or 0
     tempTrade.payout = tonumber(GetPlayerTradeMoney()) or 0
     if bet == 0 then return end
     local maxBet = addon:GetDatabaseValue("maxBet") * 10000
     local minBet = addon:GetDatabaseValue("minBet") * 10000
+    local tradeAccepted = (event == "TRADE_ACCEPT_UPDATE" and playerAccepted == 1 and targetAccepted == 1)
+
     if bet > maxBet then
-        msg:SendMessage("OVER_MAX_BET", "WHISPER", { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(maxBet) },
+        msg:SendMessage("OVER_MAX_BET", "WHISPER",
+            { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(maxBet) },
             tempTrade.name)
-    elseif bet < minBet and event == "TRADE_ACCEPT_UPDATE" then
-        msg:SendMessage("UNDER_MIN_BET", "WHISPER", { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(minBet) },
+        if tradeAccepted then
+            local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
+            pendingPayouts[tempTrade.guid] = (pendingPayouts[tempTrade.guid] or 0) + bet
+            addon:SetDatabaseValue("pendingPayout", pendingPayouts)
+            msg:SendMessage("PENDING_PAYOUT", "WHISPER",
+                { C_CurrencyInfo.GetCoinText(bet) },
+                tempTrade.name)
+            bet = 0
+        end
+        bet = 0
+    elseif bet < minBet then
+        msg:SendMessage("UNDER_MIN_BET", "WHISPER",
+            { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(minBet) },
             tempTrade.name)
+        if tradeAccepted then
+            local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
+            pendingPayouts[tempTrade.guid] = (pendingPayouts[tempTrade.guid] or 0) + bet
+            addon:SetDatabaseValue("pendingPayout", pendingPayouts)
+            msg:SendMessage("PENDING_PAYOUT", "WHISPER",
+                { C_CurrencyInfo.GetCoinText(bet) },
+                tempTrade.name)
+            bet = 0
+        end
         bet = 0
     end
     tempTrade.bet = min(bet, maxBet)
 end
-
 local function completeTrade(_, _, _, message)
     if message == ERR_TRADE_COMPLETE then
         if tempTrade.pendingPayout then

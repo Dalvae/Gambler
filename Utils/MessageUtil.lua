@@ -14,10 +14,11 @@ local sayWorthy = {
     ["CHOICE_PENDING"] = true,
     ["CHOICE_PICKED"] = true,
     ["GAME_OUTCOME"] = true,
-    ["WON_PAYOUT"] = true
+    ["WON_PAYOUT"] = true,
+    ["PENDING_PAYOUT"] = true
 }
 
----@param messageType "BET_ACCEPTED"|"CHOICE_PENDING"|"CHOICE_PICKED"|"GAME_OUTCOME"|"WON_PAYOUT"|"UNDER_MIN_BET"|"OVER_MAX_BET"|"RULES"|"PERSONAL_STATS"|"NUM_ENTRY"|"NO_FORMAT"
+---@param messageType "BET_ACCEPTED"|"CHOICE_PENDING"|"CHOICE_PICKED"|"GAME_OUTCOME"|"WON_PAYOUT"|"UNDER_MIN_BET"|"OVER_MAX_BET"|"RULES"|"PERSONAL_STATS"|"NUM_ENTRY"|"NO_FORMAT"|"PENDING_PAYOUT"
 ---@param args table
 ---@param target string|?
 function messageUtil:SendMessage(messageType, channel, args, target)
