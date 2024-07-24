@@ -1,0 +1,11 @@
+## Interface: 100207, 110000
+## Version: 1.0.0
+## Title: Gamble
+## Author: xo
+## DefaultState: enabled
+## SavedVariables: GambleDB
+## IconTexture: Interface\Addons\Gamble\Media\Textures\logo.tga
+## X-Flavor: Retail
+
+# First Load Libs and Constans
+embed.xml

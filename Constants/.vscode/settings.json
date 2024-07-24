@@ -1,0 +1,5 @@
+{
+    "Lua.diagnostics.globals": [
+        "RANDOM_ROLL_RESULT"
+    ]
+}

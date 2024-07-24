@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.blizzard.com/wow/ui/" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+    <!-- First Load Libs and Constans -->
+    <Include file="libs.xml" />
+    <Include file="Constants\Constants.xml" />
+
+    <!-- Initialize the base Addon -->
+    <script file="Init.lua" />
+
+    <!-- Load Utils -->
+    <Include file="Utils\utils.xml" />
+
+    <!-- Load the UI -->
+    <script file="UI.lua" />
+
+    <!-- Load the Main Addon -->
+    <script file="Core.lua" />
+
+    <!-- Load Chat Commands -->
+    <script file="ChatCommands.lua" />
+</Ui>
