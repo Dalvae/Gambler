@@ -29,6 +29,13 @@
         "NO",
         "sort",
         "ERR_TRADE_COMPLETE",
-        "TradePlayerInputMoneyFrameGold"
+        "TradePlayerInputMoneyFrameGold",
+        "UnitGUID",
+        "GetUnitName",
+        "min",
+        "C_Timer",
+        "GetTargetTradeMoney",
+        "GetPlayerTradeMoney",
+        "max"
     ]
 }

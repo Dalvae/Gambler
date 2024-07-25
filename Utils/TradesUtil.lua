@@ -4,6 +4,7 @@ local const = Private.constants
 local addon = Private.Addon
 local msg = Private.MessageUtil
 
+
 ---@class TradesUtil
 local tradesUtil = {}
 Private.TradesUtil = tradesUtil
@@ -51,6 +52,7 @@ local function newTrade()
         pendingPayout = pendingPayout,
         payout = 0
     }
+    return unitName     -- Devuelve el nombre del jugador
 end
 
 local function updateTrade(_, event, playerAccepted, targetAccepted)

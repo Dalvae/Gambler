@@ -3,6 +3,7 @@ local Private = select(2, ...)
 local const = Private.constants
 local addon = Private.Addon
 local msg = Private.MessageUtil
+local tradesUtil = Private.TradesUtil
 
 ---@class GameUtil
 local gameUtil = {
@@ -109,10 +110,21 @@ function gameUtil.CheckRolls(_, _, message)
     end
 end
 
+function gameUtil:HandleTradeRequest(playerName)
+    if self.game and not self.game.outcome then
+        if playerName then
+            msg:SendMessage("BUSY_WITH_GAME", "WHISPER", {}, playerName)
+        else
+            print("Error: Couldn't send whisper, player name is missing")
+        end
+    end
+end
+
 function gameUtil:CreateDBCallback()
     addon:CreateDatabaseCallback("activeGame", gameUtil.NewGame)
 end
 
+addon:RegisterEvent("TRADE_SHOW", "GameUtil.lua", gameUtil.newtrade)
 addon:RegisterEvent("CHAT_MSG_SYSTEM", "GameUtil.lua", gameUtil.CheckRolls)
 addon:RegisterEvent("CHAT_MSG_WHISPER", "GameUtil.lua", gameUtil.SelectChoice)
 addon:RegisterEvent("CHAT_MSG_SAY", "GameUtil.lua", gameUtil.SelectChoice)
