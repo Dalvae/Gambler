@@ -124,7 +124,16 @@ function gameUtil:CreateDBCallback()
     addon:CreateDatabaseCallback("activeGame", gameUtil.NewGame)
 end
 
-addon:RegisterEvent("TRADE_SHOW", "GameUtil.lua", gameUtil.newtrade)
+-- local function onTradeShow()
+--     local playerName = tradesUtil.newTrade()
+--     if playerName then
+--         gameUtil:HandleTradeRequest(playerName)
+--     else
+--         print("Error: Trade initiated but couldn't get initiator's name")
+--     end
+-- end
+
+-- addon:RegisterEvent("TRADE_SHOW", "GameUtil.lua", gameUtil.newTrade)
 addon:RegisterEvent("CHAT_MSG_SYSTEM", "GameUtil.lua", gameUtil.CheckRolls)
 addon:RegisterEvent("CHAT_MSG_WHISPER", "GameUtil.lua", gameUtil.SelectChoice)
 addon:RegisterEvent("CHAT_MSG_SAY", "GameUtil.lua", gameUtil.SelectChoice)

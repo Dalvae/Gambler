@@ -213,6 +213,22 @@ function ui:LoadUI()
         end
     end)
 
+    if not TradeFrame.GreenSquare then
+        TradeFrame.GreenSquare = TradeFrame:CreateTexture(nil, "OVERLAY")
+        TradeFrame.GreenSquare:SetSize(20, 20)
+        TradeFrame.GreenSquare:SetPoint("LEFT", TradeFrame, "RIGHT", 5, 0)
+        TradeFrame.GreenSquare:SetColorTexture(0, 1, 0, 0.8)
+        TradeFrame.GreenSquare:Hide()
+    end
+
+    if not TradeFrame.RedSquare then
+        TradeFrame.RedSquare = TradeFrame:CreateTexture(nil, "OVERLAY")
+        TradeFrame.RedSquare:SetSize(20, 20)
+        TradeFrame.RedSquare:SetPoint("LEFT", TradeFrame, "RIGHT", 5, 0)
+        TradeFrame.RedSquare:SetColorTexture(1, 0, 0, 0.8)
+        TradeFrame.RedSquare:Hide()
+    end
+
     function ui:UpdatePendingPayoutText(amount, guid)
         local text = ""
         resetOwed:Hide()
@@ -225,6 +241,35 @@ function ui:LoadUI()
             resetOwed:Show()
         end
         owedMoney:SetText(text)
+    end
+
+    function ui:ShowGreenSquare()
+        if TradeFrame and TradeFrame.GreenSquare then
+            TradeFrame.GreenSquare:Show()
+            if TradeFrame.RedSquare then
+                TradeFrame.RedSquare:Hide()
+            end
+        end
+    end
+
+    function ui:ShowRedSquare()
+        if TradeFrame and TradeFrame.RedSquare then
+            TradeFrame.RedSquare:Show()
+            if TradeFrame.GreenSquare then
+                TradeFrame.GreenSquare:Hide()
+            end
+        end
+    end
+
+    function ui:HideTradeIndicators()
+        if TradeFrame then
+            if TradeFrame.GreenSquare then
+                TradeFrame.GreenSquare:Hide()
+            end
+            if TradeFrame.RedSquare then
+                TradeFrame.RedSquare:Hide()
+            end
+        end
     end
 
     function ui:UpdateGameState(gameInfo)

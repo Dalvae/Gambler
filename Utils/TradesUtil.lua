@@ -41,6 +41,7 @@ local function newTrade()
         C_Timer.NewTicker(.1, function(self)
             if TradeFrame then
                 TradePlayerInputMoneyFrameGold:SetText(pendingPayout / 10000)
+                Private.UI:ShowGreenSquare()
                 self:Cancel()
             end
         end)
@@ -52,7 +53,7 @@ local function newTrade()
         pendingPayout = pendingPayout,
         payout = 0
     }
-    return unitName     -- Devuelve el nombre del jugador
+    return unitName -- Devuelve el nombre del jugador
 end
 
 local function updateTrade(_, event, playerAccepted, targetAccepted)
@@ -62,8 +63,10 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
     local maxBet = addon:GetDatabaseValue("maxBet") * 10000
     local minBet = addon:GetDatabaseValue("minBet") * 10000
     local tradeAccepted = (event == "TRADE_ACCEPT_UPDATE" and playerAccepted == 1 and targetAccepted == 1)
+    local playerAcceptedTrade = (event == "TRADE_ACCEPT_UPDATE" and targetAccepted == 1)
 
     if bet > maxBet then
+        Private.UI:ShowRedSquare()
         msg:SendMessage("OVER_MAX_BET", "WHISPER",
             { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(maxBet) },
             tempTrade.name)
@@ -77,7 +80,8 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
             bet = 0
         end
         bet = 0
-    elseif bet < minBet then
+    elseif bet < minBet and playerAcceptedTrade then
+        Private.UI:ShowRedSquare()
         msg:SendMessage("UNDER_MIN_BET", "WHISPER",
             { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(minBet) },
             tempTrade.name)
@@ -91,6 +95,10 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
             bet = 0
         end
         bet = 0
+    else
+        if playerAcceptedTrade then
+            Private.UI:ShowGreenSquare()
+        end
     end
     tempTrade.bet = min(bet, maxBet)
 end
