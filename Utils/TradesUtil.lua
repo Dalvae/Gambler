@@ -45,6 +45,8 @@ local function newTrade()
                 self:Cancel()
             end
         end)
+    else
+        Private.UI:HideSquares()
     end
     tempTrade = {
         guid = unitGUID or "",
@@ -53,7 +55,7 @@ local function newTrade()
         pendingPayout = pendingPayout,
         payout = 0
     }
-    return unitName -- Devuelve el nombre del jugador
+    return unitName
 end
 
 local function updateTrade(_, event, playerAccepted, targetAccepted)
@@ -65,6 +67,7 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
     local tradeAccepted = (event == "TRADE_ACCEPT_UPDATE" and playerAccepted == 1 and targetAccepted == 1)
     local playerAcceptedTrade = (event == "TRADE_ACCEPT_UPDATE" and targetAccepted == 1)
 
+    Private.UI:HideSquares()
     if bet > maxBet then
         Private.UI:ShowRedSquare()
         msg:SendMessage("OVER_MAX_BET", "WHISPER",

@@ -22,9 +22,10 @@ ClickY := 268
 ColorWarning := 0xDB9C15   ; Warning color
 
 ; For checking if the trade window is open
-TradeWindowColorX := 117
-TradeWindowColorY := 236
-TradeWindowColor := 0xD5B140  ; Yellow color
+TradeWindowColorX := 478
+TradeWindowColorY := 430
+TradeWindowColor := 0x10DA12  ; Green
+NoTradeWindowColor := 0xDD0F12 ; Red
 TradeButtonX := 286
 TradeButtonY := 685
 DenyTradeButtonX := 444
@@ -36,28 +37,22 @@ ActiveCordsX := 1410
 ActiveCordsY := 430 ; Coordinates of Active Gamble
 RollDiceCordsX := 1470
 RollDiceCordsY := 575 ; Where to click if the color is Active Gamble
-; When the game is active 
 
 ; Variables for anti-AFK
-antiAFKInterval := 300000  ; 30-second interval for anti-AFK
+antiAFKInterval := 300000  ; 5-minute interval for anti-AFK
 lastMoveTime := 0
 
 ; Function to adjust coordinates based on screen resolution ratio
 AdjustCoordinates(x, y) {
-    ; Original reference resolution
     originalWidth := 1920
     originalHeight := 1080
-
-    ; Get current screen resolution
     screenWidth := A_ScreenWidth
     screenHeight := A_ScreenHeight
-
-    ; Calculate adjusted coordinates
     adjX := x * (screenWidth / originalWidth)
     adjY := y * (screenHeight / originalHeight)
-
     return {x: adjX, y: adjY}
 }
+
 F3::
 {
     static isActive := false
@@ -75,64 +70,62 @@ F3::
     }
 }
 
-
 CheckColorAndPerformAction() {
-    global ColorX, ColorY, ColorWarning, ClickX, ClickY, lastMoveTime, antiAFKInterval, wowid1, ColorActiveGamble, ActiveCordsX, ActiveCordsY, RollDiceCordsX, RollDiceCordsY, TradeWindowColorX, TradeWindowColorY, TradeWindowColor, TradeButtonX, TradeButtonY, DenyTradeButtonX, DenyTradeButtonY
+    global ColorX, ColorY, ColorWarning, ClickX, ClickY, lastMoveTime, antiAFKInterval, wowid1, ColorActiveGamble, ActiveCordsX, ActiveCordsY, RollDiceCordsX, RollDiceCordsY, TradeWindowColorX, TradeWindowColorY, TradeWindowColor, NoTradeWindowColor, TradeButtonX, TradeButtonY, DenyTradeButtonX, DenyTradeButtonY
 
-    ; Adjust color and click coordinates based on current resolution
+    ; Adjust coordinates based on current resolution
     adjColor := AdjustCoordinates(ColorX, ColorY)
     adjClick := AdjustCoordinates(ClickX, ClickY)
+    adjDenyTradeButton := AdjustCoordinates(DenyTradeButtonX, DenyTradeButtonY)
+    adjTradeButton := AdjustCoordinates(TradeButtonX, TradeButtonY)
     adjActive := AdjustCoordinates(ActiveCordsX, ActiveCordsY)
     adjRollDice := AdjustCoordinates(RollDiceCordsX, RollDiceCordsY)
     adjTradeWindow := AdjustCoordinates(TradeWindowColorX, TradeWindowColorY)
-    adjTradeButton := AdjustCoordinates(TradeButtonX, TradeButtonY)
-    adjDenyTradeButton := AdjustCoordinates(DenyTradeButtonX, DenyTradeButtonY)
 
+    ; Check for warning color (highest priority)
     ActualColor := PixelGetColor(adjColor.x, adjColor.y, "RGB")
-
     if IsColorSimilar(ActualColor, ColorWarning, 15) {
         MouseMove(adjClick.x, adjClick.y)
         Sleep(Random(500, 1200))  
         Click
-    } else {
-        ; Check if the trade window is open using a similar color
-        TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
-        if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {
-            ; Check if the color at the specified position is not white
-            GameActiveColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
-            if GameActiveColor = 0xFFFFFF {
-                MouseMove(adjDenyTradeButton.x, adjDenyTradeButton.y)
-                Sleep(Random(200, 1200))
-                Click
-            } else {
-                ; The game is not active, accept the trade
+    }
+    ; Check for red color (second priority)
+    else {
+        DenyTradeColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
+        if isColorSimilar(DenyTradeColor, NoTradeWindowColor, 20){
+            MouseMove(adjDenyTradeButton.x, adjDenyTradeButton.y)
+            Sleep(Random(200, 1200))
+            Click
+        }
+        ; Check for green color (third priority)
+        else {
+            TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
+            if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {
                 MouseMove(adjTradeButton.x, adjTradeButton.y)
                 Sleep(Random(1200, 4000))
                 Click
             }
-        } else {
-            ; Check if the color is Active Gamble
-            ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
-            if ActiveGambleColor = ColorActiveGamble {
-                MouseMove(adjRollDice.x, adjRollDice.y)
-                Sleep(Random(500, 1200))
-                Click
-            } else {
-                ; If there is no warning, just perform anti-AFK
-                currentTime := A_TickCount
-                if (currentTime - lastMoveTime > antiAFKInterval) {
-                    ; Move left
-                    Send("{Left down}")
-                    Sleep(10)
-                    Send("{Left up}")
-
-                    Sleep(1000)
-                    ; Move right
-                    Send("{Right down}")
-                    Sleep(10)
-                    Send("{Right up}")
-
-                    lastMoveTime := currentTime
+            ; Check for Active Gamble (fourth priority)
+            else {
+                ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
+                if ActiveGambleColor = ColorActiveGamble {
+                    MouseMove(adjRollDice.x, adjRollDice.y)
+                    Sleep(Random(500, 1200))
+                    Click
+                }
+                ; Anti-AFK movement (lowest priority)
+                else {
+                    currentTime := A_TickCount
+                    if (currentTime - lastMoveTime > antiAFKInterval) {
+                        Send("{Left down}")
+                        Sleep(10)
+                        Send("{Left up}")
+                        Sleep(1000)
+                        Send("{Right down}")
+                        Sleep(10)
+                        Send("{Right up}")
+                        lastMoveTime := currentTime
+                    }
                 }
             }
         }

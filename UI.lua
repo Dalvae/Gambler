@@ -229,6 +229,17 @@ function ui:LoadUI()
         TradeFrame.RedSquare:Hide()
     end
 
+    function ui:HideSquares()
+        if TradeFrame then
+            if TradeFrame.GreenSquare then
+                TradeFrame.GreenSquare:Hide()
+            end
+            if TradeFrame.RedSquare then
+                TradeFrame.RedSquare:Hide()
+            end
+        end
+    end
+
     function ui:UpdatePendingPayoutText(amount, guid)
         local text = ""
         resetOwed:Hide()
