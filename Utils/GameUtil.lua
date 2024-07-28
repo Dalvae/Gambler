@@ -62,9 +62,31 @@ function gameUtil:SaveGame()
         local previousPay = pendingPayouts[self.game.guid] or 0
         addon:SetDatabaseValue("pendingPayout." .. self.game.guid, previousPay + self.game.payout)
         msg:SendMessage("WON_PAYOUT", "WHISPER", { C_CurrencyInfo.GetCoinText(self.game.payout) }, self.game.name)
+        -- self:AttemptTargetPlayer(self.game.name)
     end
     gameUtil:UpdateUI()
 end
+
+-- This is a protected function and need to be revamped
+-- function gameUtil:AttemptTargetPlayer(playerName)
+--     -- Crear y ejecutar una macro para seleccionar al jugador
+--     local macroText = "/target " .. playerName
+--     RunMacroText(macroText)
+
+--     -- Esperar un momento y luego verificar si el objetivo es el jugador correcto
+--     C_Timer.After(0.5, function()
+--         if UnitName("target") == playerName then
+--             -- Si el jugador está cerca, intentamos iniciar el intercambio
+--             if CheckInteractDistance("target", 2) then -- 2 es la distancia para comerciar
+--                 InitiateTrade("target")
+--             else
+--                 print("El jugador " .. playerName .. " está demasiado lejos para iniciar un intercambio.")
+--             end
+--         else
+--             print("No se pudo encontrar al jugador " .. playerName .. " para iniciar el intercambio.")
+--         end
+--     end)
+-- end
 
 function gameUtil:ProcessOutcome()
     if self.game.outcome then return end
