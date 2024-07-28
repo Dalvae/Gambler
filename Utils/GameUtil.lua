@@ -12,13 +12,17 @@ local gameUtil = {
     ---@field payout number
     ---@field choice "UNDER"|"OVER"|"7"|?
     ---@field outcome "WIN"|"LOSE"|?
-    game = {}
+    activeGames = {}
 }
 Private.GameUtil = gameUtil
 
 function gameUtil:UpdateUI()
     if Private.UI and Private.UI.UpdateGameState then
-        Private.UI:UpdateGameState(self.game)
+        local gamesArray = {}
+        for _, game in pairs(self.activeGames) do
+            table.insert(gamesArray, game)
+        end
+        Private.UI:UpdateGameState(gamesArray)
     end
 end
 
@@ -27,7 +31,7 @@ end
 function gameUtil.NewGame(_, tradeInfo)
     if not tradeInfo then return end
     if not tradeInfo.bet or tradeInfo.bet <= 0 then return end
-    gameUtil.game = {
+    local newGame = {
         guid = tradeInfo.guid,
         name = tradeInfo.name,
         bet = tradeInfo.bet,
@@ -35,49 +39,110 @@ function gameUtil.NewGame(_, tradeInfo)
         payout = 0,
         choice = nil
     }
+    gameUtil.activeGames[tradeInfo.guid] = newGame
     gameUtil:UpdateUI()
 end
 
 function gameUtil.SelectChoice(...)
-    if gameUtil.game.choice then return end
     if not ... then return end
     local guid = select(14, ...)
-    if guid ~= gameUtil.game.guid then return end
+    local game = gameUtil.activeGames[guid]
+    if not game or game.choice then return end
     local message = select(3, ...)
     if const.CHOICES[message:upper()] then
-        gameUtil.game.choice = message:upper()
-        msg:SendMessage("CHOICE_PICKED", "WHISPER", { message }, gameUtil.game.name)
+        game.choice = message:upper()
+        msg:SendMessage("CHOICE_PICKED", "WHISPER", { message }, game.name)
         gameUtil:UpdateUI()
         return
     end
-    msg:SendMessage("CHOICE_PENDING", "WHISPER", { gameUtil.game.name }, gameUtil.game.name)
+    msg:SendMessage("CHOICE_PENDING", "WHISPER", { game.name }, game.name)
 end
 
-function gameUtil:SaveGame()
+function gameUtil:SaveGame(guid)
+    local game = self.activeGames[guid]
     local currentTime = time()
-    addon:SetDatabaseValue("completeGames." .. currentTime, self.game)
-    addon:SetDatabaseValue("activeGame", {})
-    if self.game.outcome == "WIN" then
+    addon:SetDatabaseValue("completeGames." .. currentTime, game)
+
+    if game.outcome == "WIN" then
         local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
-        local previousPay = pendingPayouts[self.game.guid] or 0
-        addon:SetDatabaseValue("pendingPayout." .. self.game.guid, previousPay + self.game.payout)
-        msg:SendMessage("WON_PAYOUT", "WHISPER", { C_CurrencyInfo.GetCoinText(self.game.payout) }, self.game.name)
-        -- self:AttemptTargetPlayer(self.game.name)
+        local previousPay = pendingPayouts[game.guid] or 0
+        addon:SetDatabaseValue("pendingPayout." .. game.guid, previousPay + game.payout)
+        msg:SendMessage("WON_PAYOUT", "WHISPER", { C_CurrencyInfo.GetCoinText(game.payout) }, game.name)
     end
+
+    self.activeGames[guid] = nil
     gameUtil:UpdateUI()
 end
 
--- This is a protected function and need to be revamped
+function gameUtil:ProcessOutcome(guid)
+    local game = self.activeGames[guid]
+    if not game or game.outcome or #game.rolls < 2 then return end
+
+    local sum = game.rolls[1] + game.rolls[2]
+    local outcome = sum < 7 and "UNDER" or sum > 7 and "OVER" or "7"
+
+    if outcome == game.choice then
+        game.outcome = "WIN"
+        game.payout = game.bet * 2
+        if outcome == "7" then
+            game.payout = game.payout * 2
+        end
+    else
+        game.outcome = "LOSE"
+    end
+
+    self:SaveGame(guid)
+
+    if game.outcome == "LOSE" and not addon:GetDatabaseValue("whisperLose") then
+        return
+    end
+    msg:SendMessage("GAME_OUTCOME", "WHISPER", { sum, game.outcome }, game.name)
+end
+
+function gameUtil.CheckRolls(_, _, message)
+    if message:match(const.ROLL_MESSAGE_MATCH) then
+        local roll = tonumber(message:match("%d")) or 0
+        for guid, game in pairs(gameUtil.activeGames) do
+            if game.choice and #game.rolls < 2 then
+                table.insert(game.rolls, roll)
+                gameUtil:ProcessOutcome(guid)
+            end
+        end
+    end
+end
+
+function gameUtil:HandleTradeRequest(playerName)
+    local hasActiveGame = false
+    for _, game in pairs(self.activeGames) do
+        if game.name == playerName and not game.outcome then
+            hasActiveGame = true
+            break
+        end
+    end
+
+    if hasActiveGame then
+        msg:SendMessage("BUSY_WITH_GAME", "WHISPER", {}, playerName)
+    end
+end
+
+function gameUtil:CreateDBCallback()
+    addon:CreateDatabaseCallback("activeGame", gameUtil.NewGame)
+end
+
+-- Event registrations
+addon:RegisterEvent("CHAT_MSG_SYSTEM", "GameUtil.lua", gameUtil.CheckRolls)
+addon:RegisterEvent("CHAT_MSG_WHISPER", "GameUtil.lua", gameUtil.SelectChoice)
+addon:RegisterEvent("CHAT_MSG_SAY", "GameUtil.lua", gameUtil.SelectChoice)
+
+-- Commented out functions that might need revision:
+
 -- function gameUtil:AttemptTargetPlayer(playerName)
---     -- Crear y ejecutar una macro para seleccionar al jugador
 --     local macroText = "/target " .. playerName
 --     RunMacroText(macroText)
 
---     -- Esperar un momento y luego verificar si el objetivo es el jugador correcto
 --     C_Timer.After(0.5, function()
 --         if UnitName("target") == playerName then
---             -- Si el jugador está cerca, intentamos iniciar el intercambio
---             if CheckInteractDistance("target", 2) then -- 2 es la distancia para comerciar
+--             if CheckInteractDistance("target", 2) then
 --                 InitiateTrade("target")
 --             else
 --                 print("El jugador " .. playerName .. " está demasiado lejos para iniciar un intercambio.")
@@ -87,64 +152,6 @@ end
 --         end
 --     end)
 -- end
-
-function gameUtil:ProcessOutcome()
-    if self.game.outcome then return end
-    if #self.game.rolls < 2 then return end
-    local sum = 0
-    for _, roll in ipairs(self.game.rolls) do
-        sum = sum + roll
-    end
-    local outcome = ""
-    if sum < 7 then
-        outcome = "UNDER"
-    elseif sum > 7 then
-        outcome = "OVER"
-    elseif sum == 7 then
-        outcome = "7"
-    end
-    if outcome == self.game.choice then
-        self.game.outcome = "WIN"
-        self.game.payout = self.game.bet * 2
-        if outcome == "7" then
-            self.game.payout = self.game.payout * 2
-        end
-    else
-        self.game.outcome = "LOSE"
-    end
-    self:SaveGame()
-
-    if self.game.outcome == "LOSE" and not addon:GetDatabaseValue("whisperLose") then
-        return
-    end
-    msg:SendMessage("GAME_OUTCOME", "WHISPER", { sum, self.game.outcome }, self.game.name)
-end
-
-function gameUtil.CheckRolls(_, _, message)
-    if not gameUtil.game then return end
-    if not gameUtil.game.choice then return end
-    if message:match(const.ROLL_MESSAGE_MATCH) then
-        local roll = message:match("%d")
-        if #gameUtil.game.rolls < 2 then
-            tinsert(gameUtil.game.rolls, tonumber(roll) or 0)
-            gameUtil:ProcessOutcome()
-        end
-    end
-end
-
-function gameUtil:HandleTradeRequest(playerName)
-    if self.game and not self.game.outcome then
-        if playerName then
-            msg:SendMessage("BUSY_WITH_GAME", "WHISPER", {}, playerName)
-        else
-            print("Error: Couldn't send whisper, player name is missing")
-        end
-    end
-end
-
-function gameUtil:CreateDBCallback()
-    addon:CreateDatabaseCallback("activeGame", gameUtil.NewGame)
-end
 
 -- local function onTradeShow()
 --     local playerName = tradesUtil.newTrade()
@@ -156,6 +163,3 @@ end
 -- end
 
 -- addon:RegisterEvent("TRADE_SHOW", "GameUtil.lua", gameUtil.newTrade)
-addon:RegisterEvent("CHAT_MSG_SYSTEM", "GameUtil.lua", gameUtil.CheckRolls)
-addon:RegisterEvent("CHAT_MSG_WHISPER", "GameUtil.lua", gameUtil.SelectChoice)
-addon:RegisterEvent("CHAT_MSG_SAY", "GameUtil.lua", gameUtil.SelectChoice)

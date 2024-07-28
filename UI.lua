@@ -8,30 +8,6 @@ local ui = {}
 
 Private.UI = ui
 
-local startMoveParent
-local stopMoveParent
-
-
-if addon:GetGameVersion() == "Retail" then
-    function startMoveParent(self)
-        self:GetParent():StartMoving()
-    end
-
-    function stopMoveParent(self)
-        self:GetParent():StopMovingOrSizing()
-        addon:SetDatabaseValue("framePosition", { self:GetParent():GetPoint() })
-    end
-else
-    function startMoveParent(self)
-        self:GetParent():GetParent():StartMoving()
-    end
-
-    function stopMoveParent(self)
-        self:GetParent():GetParent():StopMovingOrSizing()
-        addon:SetDatabaseValue("framePosition", { self:GetParent():GetParent():GetPoint() })
-    end
-end
-
 local function maxBetUpdate(self)
     addon:SetDatabaseValue("maxBet", tonumber(self:GetText()) or 0)
 end
@@ -80,7 +56,7 @@ function ui:LoadUI()
         mainFrame = CreateFrame("Frame", "gambler", UIParent, "PortraitFrameFlatTemplate")
         mainFrame:SetTitle(const.ADDON_NAME)
         ButtonFrameTemplate_HidePortrait(mainFrame)
-        mainFrame.TitleContainer:SetFrameStrata("LOW")
+        mainFrame.TitleContainer:SetFrameStrata("HIGH")
         mainFrame.CloseButton:SetFrameStrata("MEDIUM")
 
         rollBtn = CreateFrame("Button", "GambleAddonRollButton", mainFrame,
@@ -101,26 +77,10 @@ function ui:LoadUI()
     mainFrame:SetPoint("CENTER", UIParent, "CENTER", 400, 20)
     mainFrame:SetFrameStrata("BACKGROUND")
 
-    local function ResetTitleColor()
-        local r, g, b, a = 1, 1, 1, 1 -- Color blanco, puedes ajustarlo si el color original es diferente
-        if addon:GetGameVersion() == "Retail" then
-            if mainFrame.TitleContainer then
-                mainFrame.TitleContainer:SetBackdropColor(r, g, b, a)
-                if mainFrame.TitleContainer.TitleText then
-                    mainFrame.TitleContainer.TitleText:SetTextColor(r, g, b, 1)
-                end
-            end
-        else
-            if mainFrame.NineSlice then
-                if mainFrame.NineSlice.Text then
-                    mainFrame.NineSlice.Text:SetTextColor(r, g, b, 1)
-                end
-                if mainFrame.NineSlice.TitleBg then
-                    mainFrame.NineSlice.TitleBg:SetColorTexture(r, g, b, a)
-                end
-            end
-        end
-    end
+    mainFrame.tabs = {}
+    mainFrame.numTabs = 0
+    mainFrame.selectedTab = 0
+
     rollBtn:SetText("Roll Dice")
     rollBtn:SetSize(100, 40)
     rollBtn:SetPoint("BOTTOM", mainFrame.Bg, "BOTTOM", 0, 10)
@@ -283,24 +243,138 @@ function ui:LoadUI()
         end
     end
 
-    function ui:UpdateGameState(gameInfo)
-        local stage = gameInfo.outcome or gameInfo.choice or "Started"
-        currentGame:SetText(string.format("Current Game ('%s'):", gameInfo.outcome or "ACTIVE"))
-        gamePlayer:SetText(string.format("Player: %s", gameInfo.name))
-        gameBet:SetText(string.format("Bet: %s", C_CurrencyInfo.GetCoinText(gameInfo.bet)))
+    local activeGames = {}
+    local tabButtons = {}
+    local currentTabIndex = 1
 
-        local isActive = not gameInfo.outcome
-        local hasChoice = gameInfo.choice and not gameInfo.outcome
-        local r, g, b, a = 1, 1, 1, 1 -- Default color (white)
+    function ui:SelectTab(index)
+        if mainFrame.selectedTab > 0 then
+            PanelTemplates_DeselectTab(mainFrame.tabs[mainFrame.selectedTab])
+        end
+        PanelTemplates_SelectTab(mainFrame.tabs[index])
+        mainFrame.selectedTab = index
+        ui:UpdateGameDisplay(index)
+    end
 
-        if isActive then
-            if hasChoice then
-                r, g, b = 0.8, 0, 0.8 -- Purple color when a choice is selected and the game is active
+    local function CreateTab(parent, index)
+        local tab = CreateFrame("Button", nil, parent, "TabButtonTemplate")
+        tab:SetID(index)
+        tab:SetText(tostring(index))
+
+        tab:SetFrameStrata("LOW")
+        tab:SetScript("OnClick", function(self)
+            ui:SelectTab(self:GetID())
+        end)
+        return tab
+    end
+
+    local function UpdateTabs(numGames)
+        local tabWidth = 50
+        local spacing = 2
+
+        for i = 1, numGames do
+            if not mainFrame.tabs[i] then
+                mainFrame.tabs[i] = CreateTab(mainFrame, i)
+            end
+            mainFrame.tabs[i]:Show()
+
+            if i == 1 then
+                mainFrame.tabs[i]:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 5, 30)
             else
-                r, g, b = 1, 1, 1     -- White color when the game is active but no choice is selected
+                mainFrame.tabs[i]:SetPoint("TOPLEFT", mainFrame.tabs[i - 1], "TOPRIGHT", spacing, 0)
+            end
+        end
+
+        for i = numGames + 1, #mainFrame.tabs do
+            mainFrame.tabs[i]:Hide()
+        end
+
+        mainFrame.numTabs = numGames
+
+        if mainFrame.selectedTab > numGames then
+            mainFrame.selectedTab = numGames
+        end
+
+        if mainFrame.selectedTab == 0 and numGames > 0 then
+            mainFrame.selectedTab = 1
+        end
+
+        if mainFrame.selectedTab > 0 then
+            ui:SelectTab(mainFrame.selectedTab)
+        end
+
+        local totalWidth = (tabWidth + spacing) * numGames - spacing + 10
+        if totalWidth > mainFrame:GetWidth() then
+            mainFrame:SetWidth(totalWidth)
+        end
+    end
+    function ui:UpdateGameState(games)
+        activeGames = games
+
+        local priorityIndex = 1
+        local hasActiveGame = false
+        for i, game in ipairs(activeGames) do
+            if not game.outcome then
+                hasActiveGame = true
+                if game.choice then
+                    priorityIndex = i
+                    break
+                else
+                    priorityIndex = i
+                end
+            end
+        end
+
+        UpdateTabs(#activeGames)
+
+        if hasActiveGame then
+            ui:SelectTab(priorityIndex)
+        else
+            currentGame:SetText("Current Game (No Game)")
+            gamePlayer:SetText("Player: No game")
+            gameBet:SetText("Bet: ???")
+
+            local r, g, b, a = 0, 0, 0, 1
+            if addon:GetGameVersion() == "Retail" then
+                if mainFrame.TitleContainer then
+                    mainFrame.TitleContainer:SetBackdropColor(r, g, b, a)
+                    if mainFrame.TitleContainer.TitleText then
+                        mainFrame.TitleContainer.TitleText:SetTextColor(r, g, b, 1)
+                    end
+                end
+            else
+                if mainFrame.NineSlice then
+                    if mainFrame.NineSlice.Text then
+                        mainFrame.NineSlice.Text:SetTextColor(r, g, b, 1)
+                    end
+                    if mainFrame.NineSlice.TitleBg then
+                        mainFrame.NineSlice.TitleBg:SetColorTexture(r, g, b, a)
+                    end
+                end
+            end
+        end
+    end
+
+    function ui:UpdateGameDisplay(index)
+        local gameInfo = activeGames[index]
+        local r, g, b, a = 0, 0, 0, 1
+
+        if gameInfo then
+            currentGame:SetText(string.format("Current Game ('%s'):", gameInfo.outcome or "ACTIVE"))
+            gamePlayer:SetText(string.format("Player: %s", gameInfo.name))
+            gameBet:SetText(string.format("Bet: %s", C_CurrencyInfo.GetCoinText(gameInfo.bet)))
+
+            local needsRoll = gameInfo.choice and not gameInfo.outcome and #(gameInfo.rolls or {}) < 2
+
+            if needsRoll then
+                r, g, b = 0.8, 0, 0.8
+            elseif not gameInfo.outcome then
+                r, g, b = 1, 1, 1
             end
         else
-            r, g, b = 0, 0, 0
+            currentGame:SetText("Current Game (No Game)")
+            gamePlayer:SetText("Player: No game")
+            gameBet:SetText("Bet: ???")
         end
 
         if addon:GetGameVersion() == "Retail" then
