@@ -1,29 +1,45 @@
----@class AddonPrivate
+---@class AddonPrivate*
 local Private = select(2, ...)
 local const = Private.constants
 local addon = Private.Addon
 local msg = Private.MessageUtil
 local stats = Private.StatsUtil
 local vipUtil = Private.VipUtil
-
----@class ChatCommands
+---@class ChatCommands*
 local chatCommands = {}
-
 Private.ChatCommands = chatCommands
+
+local function matchCommand(message, commands)
+    message = message:lower():gsub("^%s*!?%s*", "") -- Remove leading spaces and optional !
+    for _, cmd in ipairs(commands) do
+        if message:find("^" .. cmd) then
+            return true
+        end
+    end
+    return false
+end
 
 function chatCommands.OnWhisper(_, _, ...)
     local message, sender = ...
     local senderGUID = select(12, ...)
+
+    local ruleCommands = {
+        "rules", "rule", "info", "howtoplay", "howdoiplay", "howtogamble"
+    }
+
+    if matchCommand(message, ruleCommands) or message:lower():match("how do i play") then
+        msg:SendMessage("RULES", "WHISPER",
+            { { sender }, {}, {}, { C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("minBet") * 10000), C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("maxBet") * 10000) }, {} },
+            sender)
+        return
+    end
+
     if not message:match("!") then return end
     local command = message:match("!([%a%d]+)")
     if not command then return end
     command = command:lower()
 
-    if command == "rules" then
-        msg:SendMessage("RULES", "WHISPER",
-            { { sender }, {}, {}, { C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("minBet") * 10000), C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("maxBet") * 10000) }, {} },
-            sender)
-    elseif command == "stats" and addon:GetDatabaseValue("allowStats") then
+    if command == "stats" and addon:GetDatabaseValue("allowStats") then
         local playerStats = stats:GetPlayerStats(senderGUID)
         msg:SendMessage("PERSONAL_STATS", "WHISPER",
             { playerStats.wins, playerStats.loses, C_CurrencyInfo.GetCoinText(playerStats.won), C_CurrencyInfo
@@ -41,20 +57,22 @@ function chatCommands.OnWhisper(_, _, ...)
         msg:SendMessage("NUM_ENTRY", "WHISPER", msgLeaderboard, sender)
     elseif command == "10" then
         local last10Games = stats:GetHistoryGames(10)
-        local outcomes = { shouldRepeat = true }
-        for i, game in ipairs(last10Games) do
+        local outcomes = {}
+        for i = #last10Games, 1, -1 do -- Iterate in reverse order
+            local game = last10Games[i]
             local sum = 0
             for _, roll in ipairs(game.rolls) do
                 sum = sum + roll
             end
-            tinsert(outcomes, { i, sum })
+            table.insert(outcomes, string.format("[%d]", sum))
         end
-        msg:SendMessage("NO_FORMAT", "WHISPER", { "Last Dice Rolls (Last 10 Games)" }, sender)
-        msg:SendMessage("NUM_ENTRY", "WHISPER", outcomes, sender)
+        local outcomeString = table.concat(outcomes, " ")
+        msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 10 Dice Rolls (newest -> oldest): " .. outcomeString }, sender)
     elseif command == "vip" and vipUtil:CanUseCommands(senderGUID) then
         local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
         msg:SendMessage("NO_FORMAT", "WHISPER",
-            { string.format("Your VIP Bonus is currently at %s. Use !payout to get this amount traded.", C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+            { string.format("Your VIP Bonus is currently at %s. Use !payout to get this amount traded.",
+                C_CurrencyInfo.GetCoinText(currentLoyalty)) },
             sender)
     elseif command == "payout" and vipUtil:CanUseCommands(senderGUID) then
         local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
