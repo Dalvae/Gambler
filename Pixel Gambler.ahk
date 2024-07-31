@@ -142,6 +142,6 @@ CheckColorAndPerformAction() {
     }
 }
 
-SetTimer(CheckColorAndPerformAction, 1000)
+SetTimer(CheckColorAndPerformAction, 50)
 
 #HotIf
