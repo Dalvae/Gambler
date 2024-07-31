@@ -101,8 +101,18 @@ CheckColorAndPerformAction() {
         else {
             TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
             if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {
-                MouseMove(adjTradeButton.x, adjTradeButton.y)
-                Sleep(Random(1200, 4000))
+                ; Check if the color at adjActive coordinates is white
+                ActiveColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
+                if IsColorSimilar(ActiveColor, 0xFFFFFF, 20) {  
+                    MouseMove(adjTradeButton.x, adjTradeButton.y)
+                    delayTime := Random(6000, 8000)
+                    ToolTip("Additional delay applied: " . delayTime . " ms")
+                    Sleep(delayTime)  
+                    SetTimer(() => ToolTip(), -3000)  
+                } else {
+                    MouseMove(adjTradeButton.x, adjTradeButton.y)
+                    Sleep(Random(1200, 4000))  
+                }
                 Click
             }
             ; Check for Active Gamble (fourth priority)
