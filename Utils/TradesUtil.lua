@@ -117,19 +117,29 @@ local function completeTrade(_, _, _, message)
         if tempTrade.pendingPayout then
             local remainingPayout = max(0, tempTrade.pendingPayout - tempTrade.payout)
             addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, remainingPayout)
+
+            if remainingPayout == 0 then
+                addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, 0)
+            end
         end
+
         if tempTrade.bet <= 0 then return end
+
         if addon:GetDatabaseValue("loyalty") then
             local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
             local loyaltyBonus = math.floor((tempTrade.bet * loyaltyPercent) / 100)
             local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
             local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
-            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
+
+            local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
+            if not pendingPayouts[tempTrade.guid] or pendingPayouts[tempTrade.guid] == 0 then
+                addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
+            end
         end
+
         tradesUtil:SaveTrade(tempTrade)
     end
 end
-
 addon:RegisterEvent("TRADE_SHOW", "TradesUtil.lua", newTrade)
 addon:RegisterEvent("TRADE_MONEY_CHANGED", "TradesUtil.lua", updateTrade)
 addon:RegisterEvent("TRADE_ACCEPT_UPDATE", "TradesUtil.lua", updateTrade)

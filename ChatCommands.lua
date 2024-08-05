@@ -75,14 +75,25 @@ function chatCommands.OnWhisper(_, _, ...)
             sender)
     elseif command == "payout" and vipUtil:CanUseCommands(senderGUID) then
         local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
-        msg:SendMessage("NO_FORMAT", "WHISPER",
-            { string.format("Trade me for your payout of your %s VIP Bonus.",
-                C_CurrencyInfo.GetCoinText(currentLoyalty)) },
-            sender)
         local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
         local previousPay = pendingPayouts[senderGUID] or 0
-        addon:SetDatabaseValue("pendingPayout." .. senderGUID, previousPay + currentLoyalty)
-        addon:SetDatabaseValue("loyaltyAmount." .. senderGUID, 0)
+
+        if previousPay > 0 then
+            msg:SendMessage("NO_FORMAT", "WHISPER",
+                { string.format("You already have a pending payout of %s. Trade me to receive it.",
+                    C_CurrencyInfo.GetCoinText(previousPay)) },
+                sender)
+        elseif currentLoyalty > 0 then
+            addon:SetDatabaseValue("pendingPayout." .. senderGUID, currentLoyalty)
+            msg:SendMessage("NO_FORMAT", "WHISPER",
+                { string.format("Trade me for your payout of your %s VIP Bonus.",
+                    C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+                sender)
+        else
+            msg:SendMessage("NO_FORMAT", "WHISPER",
+                { "You don't have any VIP Bonus to payout at the moment." },
+                sender)
+        end
     end
 end
 
