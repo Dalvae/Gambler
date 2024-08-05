@@ -40,7 +40,14 @@ local function newTrade()
     if pendingPayout then
         C_Timer.NewTicker(.1, function(self)
             if TradeFrame then
-                TradePlayerInputMoneyFrameGold:SetText(pendingPayout / 10000)
+                local gold = math.floor(pendingPayout / 10000)
+                local silver = math.floor((pendingPayout % 10000) / 100)
+                local copper = pendingPayout % 100
+
+                TradePlayerInputMoneyFrameGold:SetText(gold)
+                TradePlayerInputMoneyFrameSilver:SetText(silver)
+                TradePlayerInputMoneyFrameCopper:SetText(copper)
+
                 Private.UI:ShowGreenSquare()
                 self:Cancel()
             end
@@ -114,7 +121,7 @@ local function completeTrade(_, _, _, message)
         if tempTrade.bet <= 0 then return end
         if addon:GetDatabaseValue("loyalty") then
             local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
-            local loyaltyBonus = tempTrade.bet / 100 * loyaltyPercent
+            local loyaltyBonus = math.floor((tempTrade.bet * loyaltyPercent) / 100)
             local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
             local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
             addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)

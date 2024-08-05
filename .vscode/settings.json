@@ -41,6 +41,8 @@
         "PanelTemplates_SetTab",
         "PanelTemplates_UpdateTabs",
         "PanelTemplates_SelectTab",
-        "PanelTemplates_DeselectTab"
+        "PanelTemplates_DeselectTab",
+        "TradePlayerInputMoneyFrameSilver",
+        "TradePlayerInputMoneyFrameCopper"
     ]
 }
