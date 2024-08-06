@@ -56,17 +56,18 @@ function chatCommands.OnWhisper(_, _, ...)
         msg:SendMessage("NO_FORMAT", "WHISPER", { "Top Winners (Last 24 Hours)" }, sender)
         msg:SendMessage("NUM_ENTRY", "WHISPER", msgLeaderboard, sender)
     elseif command == "10" then
-        local last10Games = stats:GetHistoryGames(10)
-        local outcomes = { shouldRepeat = true }
-        for i, game in ipairs(last10Games) do
+        local last7Games = stats:GetHistoryGames(7)
+        local outcomes = {}
+        for i = #last7Games, 1, -1 do
+            local game = last7Games[i]
             local sum = 0
             for _, roll in ipairs(game.rolls) do
                 sum = sum + roll
             end
-            tinsert(outcomes, { i, sum })
+            table.insert(outcomes, string.format("[%d]", sum))
         end
-        msg:SendMessage("NO_FORMAT", "WHISPER", { "Last Dice Rolls (Last 10 Games)" }, sender)
-        msg:SendMessage("NUM_ENTRY", "WHISPER", outcomes, sender)
+        local rollsString = table.concat(outcomes, " ")
+        msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Dice Rolls (Newest > Oldest): " .. rollsString }, sender)
     elseif command == "vip" and vipUtil:CanUseCommands(senderGUID) then
         local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
         msg:SendMessage("NO_FORMAT", "WHISPER",
