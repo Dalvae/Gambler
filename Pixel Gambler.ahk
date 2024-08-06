@@ -100,27 +100,18 @@ CheckColorAndPerformAction() {
         ; Check for green color (third priority)
         else {
             TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
-            if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {
-                ; Check if the color at adjActive coordinates is white
-                ActiveColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
-                if IsColorSimilar(ActiveColor, 0xFFFFFF, 20) {  
+            if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {             
                     MouseMove(adjTradeButton.x, adjTradeButton.y)
-                    delayTime := Random(6000, 8000)
-                    ToolTip("Additional delay applied: " . delayTime . " ms")
-                    Sleep(delayTime)  
-                    SetTimer(() => ToolTip(), -3000)  
-                } else {
-                    MouseMove(adjTradeButton.x, adjTradeButton.y)
-                    Sleep(Random(1200, 4000))  
-                }
-                Click
+                    Sleep(Random(500, 700))  
+                    Click
             }
-            ; Check for Active Gamble (fourth priority)
+            ; Check for Active Gamble purple color (fourth priority)
             else {
                 ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
                 if ActiveGambleColor = ColorActiveGamble {
-                    MouseMove(adjRollDice.x, adjRollDice.y)
-                    Sleep(Random(500, 1200))
+                    RandomSleep := Random(1200, 3000)
+                    ToolTip("Sleep timer for Active Gamble: " RandomSleep " ms")
+                    Sleep(RandomSleep)
                     Click
                 }
                 ; Anti-AFK movement (lowest priority)
