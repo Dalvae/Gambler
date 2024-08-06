@@ -58,11 +58,34 @@ function gameUtil.SelectChoice(...)
     msg:SendMessage("CHOICE_PENDING", "WHISPER", { game.name }, game.name)
 end
 
+local gameCounter = 0
 function gameUtil:SaveGame(guid)
     local game = self.activeGames[guid]
     local currentTime = time()
-    addon:SetDatabaseValue("completeGames." .. currentTime, game)
+    gameCounter = gameCounter + 1
+    local key = tostring(gameCounter)
 
+    local gameToSave = {
+        guid = game.guid,
+        name = game.name,
+        bet = game.bet,
+        rolls = game.rolls,
+        payout = game.payout,
+        choice = game.choice,
+        outcome = game.outcome,
+        timeKey = key,
+        time = currentTime
+    }
+
+
+    addon:SetDatabaseValue("completeGames." .. key, gameToSave)
+    local rollSum = game.rolls and (game.rolls[1] + game.rolls[2]) or "No rolls"
+
+    Private.StatsUtil.historyCache = {
+        DB = {},
+        indexedDB = {},
+        lastUpdate = 0
+    }
     if game.outcome == "WIN" then
         local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
         local previousPay = pendingPayouts[game.guid] or 0

@@ -9,35 +9,37 @@ local statsUtil = {
     ---@field DB table
     ---@field indexedDB table
     ---@field lastUpdate number
-    historyCache = {}
+    historyCache = {
+        DB = {},
+        indexedDB = {},
+        lastUpdate = 0
+    }
 }
 Private.StatsUtil = statsUtil
 
 function statsUtil:IndexDB(db)
     local indexed = {}
-    for time, info in pairs(db) do
+    for timeKey, info in pairs(db) do
         local copied = addon:CopyTable(info)
-        copied.time = tonumber(time)
+        copied.timeKey = timeKey
         tinsert(indexed, copied)
     end
-
-    sort(indexed, function (a, b)
-        return a.time > b.time
+    sort(indexed, function(a, b)
+        return tonumber(a.timeKey) > tonumber(b.timeKey)
     end)
-
     return indexed
 end
 
 function statsUtil:GetHistory()
     local now = GetTime()
-    if not self.historyCache.lastUpdate or self.historyCache.lastUpdate + 60 < now then
-        local history = addon:GetDatabaseValue("completeGames")
-        self.historyCache = {
-            DB = history,
-            lastUpdate = now,
-            indexedDB = self:IndexDB(history)
-        }
-    end
+
+    local history = addon:GetDatabaseValue("completeGames")
+    self.historyCache = {
+        DB = history,
+        lastUpdate = now,
+        indexedDB = self:IndexDB(history)
+    }
+
     return self.historyCache
 end
 
@@ -58,9 +60,13 @@ end
 function statsUtil:GetHistoryGames(gameCount)
     local games = {}
     local history = self:GetHistory()
-    for _, game in ipairs(history.indexedDB) do
-        if #games >= gameCount then break end
-        tinsert(games, game)
+    if history and history.indexedDB then
+        for i = 1, math.min(gameCount, #history.indexedDB) do
+            local game = history.indexedDB[i]
+            tinsert(games, game)
+            local rollSum = game.rolls and (game.rolls[1] + game.rolls[2]) or "No rolls"
+        end
+    else
     end
     return games
 end

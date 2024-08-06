@@ -10,7 +10,7 @@ local chatCommands = {}
 Private.ChatCommands = chatCommands
 
 local function matchCommand(message, commands)
-    message = message:lower():gsub("^%s*!?%s*", "") -- Remove leading spaces and optional !
+    message = message:lower():gsub("^%s*!?%s*", "")
     for _, cmd in ipairs(commands) do
         if message:find("^" .. cmd) then
             return true
@@ -57,17 +57,21 @@ function chatCommands.OnWhisper(_, _, ...)
         msg:SendMessage("NUM_ENTRY", "WHISPER", msgLeaderboard, sender)
     elseif command == "10" then
         local last7Games = stats:GetHistoryGames(7)
-        local outcomes = {}
-        for i = #last7Games, 1, -1 do
-            local game = last7Games[i]
-            local sum = 0
-            for _, roll in ipairs(game.rolls) do
-                sum = sum + roll
+        if last7Games and #last7Games > 0 then
+            local outcomes = {}
+            for i, game in ipairs(last7Games) do
+                if game.rolls and #game.rolls == 2 then
+                    local sum = game.rolls[1] + game.rolls[2]
+                    table.insert(outcomes, string.format("[%d]", sum))
+                else
+                    table.insert(outcomes, "[?]")
+                end
             end
-            table.insert(outcomes, string.format("[%d]", sum))
+            local rollsString = table.concat(outcomes, " ")
+            msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Dice Rolls (Newest > Oldest): " .. rollsString }, sender)
+        else
+            msg:SendMessage("NO_FORMAT", "WHISPER", { "No se encontraron juegos recientes." }, sender)
         end
-        local rollsString = table.concat(outcomes, " ")
-        msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Dice Rolls (Newest > Oldest): " .. rollsString }, sender)
     elseif command == "vip" and vipUtil:CanUseCommands(senderGUID) then
         local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
         msg:SendMessage("NO_FORMAT", "WHISPER",
