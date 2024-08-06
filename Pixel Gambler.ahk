@@ -112,6 +112,7 @@ CheckColorAndPerformAction() {
                     RandomSleep := Random(3000, 8000)
                     MouseMove(adjRollDice.x, adjRollDice.y)
                     ToolTip("Sleep timer for Active Gamble: " RandomSleep " ms")
+                    SetTimer(() => ToolTip(), -3000)  ; Remove tooltip after 3 seconds
                     Sleep(RandomSleep)
                     Click
                 }
