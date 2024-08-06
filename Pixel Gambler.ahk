@@ -94,7 +94,7 @@ CheckColorAndPerformAction() {
         DenyTradeColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
         if isColorSimilar(DenyTradeColor, NoTradeWindowColor, 20){
             MouseMove(adjDenyTradeButton.x, adjDenyTradeButton.y)
-            Sleep(Random(200, 1200))
+            Sleep(Random(100, 700))
             Click
         }
         ; Check for green color (third priority)
@@ -102,14 +102,14 @@ CheckColorAndPerformAction() {
             TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
             if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {             
                     MouseMove(adjTradeButton.x, adjTradeButton.y)
-                    Sleep(Random(200, 700))  
+                    Sleep(Random(100, 700))  
                     Click
             }
             ; Check for Active Gamble purple color (fourth priority)
             else {
                 ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
                 if ActiveGambleColor = ColorActiveGamble {
-                    RandomSleep := Random(3000, 8000)
+                    RandomSleep := Random(100, 700)
                     MouseMove(adjRollDice.x, adjRollDice.y)
                     ToolTip("Sleep timer for Active Gamble: " RandomSleep " ms")
                     SetTimer(() => ToolTip(), -3000)  ; Remove tooltip after 3 seconds
