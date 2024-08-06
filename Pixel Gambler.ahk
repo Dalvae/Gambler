@@ -86,7 +86,7 @@ CheckColorAndPerformAction() {
     ActualColor := PixelGetColor(adjColor.x, adjColor.y, "RGB")
     if IsColorSimilar(ActualColor, ColorWarning, 15) {
         MouseMove(adjClick.x, adjClick.y)
-        Sleep(Random(500, 1200))  
+        Sleep(Random(200, 1200))  
         Click
     }
     ; Check for red color (second priority)
@@ -102,14 +102,15 @@ CheckColorAndPerformAction() {
             TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
             if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {             
                     MouseMove(adjTradeButton.x, adjTradeButton.y)
-                    Sleep(Random(500, 700))  
+                    Sleep(Random(200, 700))  
                     Click
             }
             ; Check for Active Gamble purple color (fourth priority)
             else {
                 ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
                 if ActiveGambleColor = ColorActiveGamble {
-                    RandomSleep := Random(1200, 3000)
+                    RandomSleep := Random(3000, 8000)
+                    MouseMove(adjRollDice.x, adjRollDice.y)
                     ToolTip("Sleep timer for Active Gamble: " RandomSleep " ms")
                     Sleep(RandomSleep)
                     Click
