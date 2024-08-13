@@ -30,17 +30,30 @@ function chatCommands.OnWhisper(_, _, ...)
         "jackpot", "jack pot"
     }
     if matchCommand(message, ruleCommands) or message:lower():match("how do i play") then
-        msg:SendMessage("RULES", "WHISPER",
-            { { sender }, {}, {}, { C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("minBet") * 10000), C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("maxBet") * 10000) }, {} },
-            sender)
+        msg:SendMessage("RULES1", "WHISPER", { sender }, sender)
+        msg:SendMessage("RULES2", "WHISPER", {}, sender)
+        msg:SendMessage("RULES3", "WHISPER", {}, sender)
+        msg:SendMessage("RULES4", "WHISPER",
+            { C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("minBet") * 10000), C_CurrencyInfo.GetCoinText(addon
+            :GetDatabaseValue("maxBet") * 10000) }, sender)
+
+        if addon:GetDatabaseValue("jackpotEnabled") then
+            msg:SendMessage("RULEJACKPOT", "WHISPER", {}, sender)
+        end
+
+        msg:SendMessage("RULES5", "WHISPER", {}, sender)
         return
     end
 
     if matchCommand(message, jackpotCommands) then
-        msg:SendMessage("NO_FORMAT", "WHISPER",
-            {
-                "Win a Jackpot 5 times your bet by winning 5 consecutive bets of the same amount. Changing the bet amount resets the count. For example, five consecutive wins at 10,000g each nets you a 50,000g Jackpot!" },
-            sender)
+        if addon:GetDatabaseValue("jackpotEnabled") then
+            msg:SendMessage("NO_FORMAT", "WHISPER",
+                {
+                    "Win a Jackpot 5 times your bet by winning 5 consecutive bets of the same amount. Changing the bet amount resets the count. For example, five consecutive wins at 10,000g each nets you a 50,000g Jackpot!" },
+                sender)
+        else
+            msg:SendMessage("NO_FORMAT", "WHISPER", { "The Jackpot feature is currently disabled." }, sender)
+        end
         return
     end
     if not message:match("!") then return end

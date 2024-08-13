@@ -22,7 +22,7 @@ local sayWorthy = {
     ["OVER_MAX_BET"] = true,
 }
 
----@param messageType "BET_ACCEPTED"|"CHOICE_PENDING"|"CHOICE_PICKED"|"GAME_OUTCOME"|"WON_PAYOUT"|"UNDER_MIN_BET"|"OVER_MAX_BET"|"RULES"|"PERSONAL_STATS"|"NUM_ENTRY"|"NO_FORMAT"|"PENDING_PAYOUT" |"BUSY_WITH_GAME" |"LOYALTY_MIN_BET_NOT_MET"
+---@param messageType "BET_ACCEPTED"|"CHOICE_PENDING"|"CHOICE_PICKED"|"GAME_OUTCOME"|"WON_PAYOUT"|"UNDER_MIN_BET"|"OVER_MAX_BET"|"RULES"|"PERSONAL_STATS"|"NUM_ENTRY"|"NO_FORMAT"|"PENDING_PAYOUT"|"BUSY_WITH_GAME"|"LOYALTY_MIN_BET_NOT_MET"|"RULEJACKPOT"
 ---@param args table
 ---@param target string|?
 function messageUtil:SendMessage(messageType, channel, args, target)
@@ -44,23 +44,30 @@ function messageUtil:SendMessage(messageType, channel, args, target)
         self.lastReminder = curr
     end
     local message = const.MESSAGE_TYPES[messageType]
-    if #args > 0 then
+    if not message then
+        addon:ThrowError("Invalid message type: " .. tostring(messageType))
+        return
+    end
+    if args and #args > 0 then
         message = message:format(unpack(args))
     end
-    SendChatMessage(message, channel, nil, target)
-
-    if sayWorthy[messageType] and addon:GetDatabaseValue("sayPopups") then
-        StaticPopupDialogs["SEND_DUPE_IN_SAY"] = {
-            text = "Do you want to also send '%s' in /Say",
-            button1 = YES,
-            button2 = NO,
-            OnAccept = function()
-                SendChatMessage(string.format("@%s: %s", target, message), "SAY")
-            end,
-            timeout = 10,
-            whileDead = true,
-            hideOnEscape = true,
-        }
-        StaticPopup_Show("SEND_DUPE_IN_SAY", message)
+    if message and message ~= "" then
+        SendChatMessage(message, channel, nil, target)
+        if sayWorthy[messageType] and addon:GetDatabaseValue("sayPopups") then
+            StaticPopupDialogs["SEND_DUPE_IN_SAY"] = {
+                text = "Do you want to also send '%s' in /Say",
+                button1 = YES,
+                button2 = NO,
+                OnAccept = function()
+                    SendChatMessage(string.format("@%s: %s", target, message), "SAY")
+                end,
+                timeout = 10,
+                whileDead = true,
+                hideOnEscape = true,
+            }
+            StaticPopup_Show("SEND_DUPE_IN_SAY", message)
+        end
+    else
+        addon:ThrowError("Attempted to send empty message for type: " .. tostring(messageType))
     end
 end

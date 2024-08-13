@@ -8,7 +8,7 @@ local defaultDatabase = {
     pendingPayout = {},
     loyaltyAmount = {},
     loyaltyList = {},
-    framePosition = {"RIGHT"},
+    framePosition = { "RIGHT" },
     minBet = 1000,
     maxBet = 100000,
     whisperLose = true,
@@ -17,6 +17,7 @@ local defaultDatabase = {
     loyalty = false,
     loyaltyClosed = false,
     loyaltyPercent = 5,
+    jackpotEnabled = false,
 }
 
 ---@class GambleAddon : RasuAddonBase

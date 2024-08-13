@@ -110,9 +110,14 @@ function ui:LoadUI()
         "Invite VIP Only", "Only Enable VIP for selected Players (/gambe vip [add/remove/list] <playername>).",
         "loyaltyClosed")
 
+    local jackpotEnabled = ui:CreateCheckbox(mainFrame,
+        { { "TOPLEFT", loyaltyInvite, "BOTTOMLEFT", 0, -2.5 } },
+        "Enable Jackpot", "Enable the Jackpot feature for consecutive wins.",
+        "jackpotEnabled")
+
     local loyaltyPercent = CreateFrame("EditBox", nil, mainFrame, "InputBoxInstructionsTemplate")
     loyaltyPercent:SetSize(150, 20)
-    loyaltyPercent:SetPoint("TOPLEFT", loyaltyInvite, "BOTTOMLEFT", 10, -2.5)
+    loyaltyPercent:SetPoint("TOPLEFT", jackpotEnabled, "BOTTOMLEFT", 10, -2.5)
     loyaltyPercent:ClearFocus()
     loyaltyPercent:SetAutoFocus(false)
     loyaltyPercent:SetNumeric(true)
