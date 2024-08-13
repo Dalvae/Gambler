@@ -25,7 +25,7 @@ constants.MESSAGE_TYPES = {
     ["CHOICE_PENDING"] = "Your Choice is still missing %s! Type 'under', '7' or 'over' to pick your choice.",
     ["CHOICE_PICKED"] = "Your Choice '%s' was saved! Rolling the Dice... Good Luck!",
     ["GAME_OUTCOME"] = "The Dice rolled %d! That's a %s for you.",
-    ["WON_PAYOUT"] = "You just won %s! Trade me or wait till i trade you.",
+    ["WON_PAYOUT"] = "You just won %s! Open trade to receive winnings!",
     ["UNDER_MIN_BET"] = "You're trying to bet %s which is under the minimum Bet that is currently: %s!",
     ["OVER_MAX_BET"] = "You're about to bet %s even though the max allowed Bet is currently: %s!",
     ["PENDING_PAYOUT"] = "I owe you %s. Trade me anytime and I'll give it back to you.",
@@ -38,6 +38,8 @@ constants.MESSAGE_TYPES = {
     ["PERSONAL_STATS"] = "Your Stats: %dW, %dL, +%s, -%s",
     ["NUM_ENTRY"] = "%d. %s",
     ["NO_FORMAT"] = "%s",
+    ["LOYALTY_MIN_BET_NOT_MET"] = "The current minimun for a loyalty bonus is %s, bet more if you want a loyalty bonus",
+
 }
 
 constants.COLORS = {
