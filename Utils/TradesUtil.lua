@@ -60,7 +60,9 @@ local function newTrade()
         name = unitName,
         bet = 0,
         pendingPayout = pendingPayout,
-        payout = 0
+        payout = 0,
+        consecutiveWins = 0, -- Initialize consecutiveWins
+        lastBetAmount = 0
     }
     return unitName
 end

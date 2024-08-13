@@ -40,6 +40,8 @@ constants.MESSAGE_TYPES = {
     ["NUM_ENTRY"] = "%d. %s",
     ["NO_FORMAT"] = "%s",
     ["LOYALTY_MIN_BET_NOT_MET"] = "The current minimun for a loyalty bonus is %s, bet more if you want a loyalty bonus",
+    ["JACKPOT_PROGRESS"] = "You're on a winning streak! Win %d more times with the same bet amount for a Jackpot!",
+    ["JACKPOT_WIN"] = "JACKPOT! You've won an additional %s!",
 
 }
 

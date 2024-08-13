@@ -97,6 +97,33 @@ function gameUtil:SaveGame(guid)
     gameUtil:UpdateUI()
 end
 
+function gameUtil.CheckRolls(_, _, message)
+    if message:match(const.ROLL_MESSAGE_MATCH) then
+        local roll = tonumber(message:match("%d")) or 0
+        for guid, game in pairs(gameUtil.activeGames) do
+            if game.choice and #game.rolls < 2 then
+                table.insert(game.rolls, roll)
+                gameUtil:ProcessOutcome(guid)
+            end
+        end
+    end
+end
+
+function gameUtil:GetPlayerJackpotData(guid)
+    local jackpotData = addon:GetDatabaseValue("playerJackpotData") or {}
+    if not jackpotData[guid] then
+        jackpotData[guid] = { consecutiveWins = 0, lastBetAmount = 0 }
+        addon:SetDatabaseValue("playerJackpotData", jackpotData)
+    end
+    return jackpotData[guid]
+end
+
+function gameUtil:UpdatePlayerJackpotData(guid, consecutiveWins, lastBetAmount)
+    local jackpotData = addon:GetDatabaseValue("playerJackpotData") or {}
+    jackpotData[guid] = { consecutiveWins = consecutiveWins, lastBetAmount = lastBetAmount }
+    addon:SetDatabaseValue("playerJackpotData", jackpotData)
+end
+
 function gameUtil:ProcessOutcome(guid)
     local game = self.activeGames[guid]
     if not game or game.outcome or #game.rolls < 2 then return end
@@ -110,8 +137,35 @@ function gameUtil:ProcessOutcome(guid)
         if outcome == "7" then
             game.payout = game.payout * 2
         end
+
+        -- Jackpot logic
+        if addon:GetDatabaseValue("jackpotEnabled") then
+            local jackpotData = self:GetPlayerJackpotData(game.guid)
+
+            if game.bet == jackpotData.lastBetAmount then
+                jackpotData.consecutiveWins = jackpotData.consecutiveWins + 1
+            else
+                jackpotData.consecutiveWins = 1
+            end
+            jackpotData.lastBetAmount = game.bet
+
+            if jackpotData.consecutiveWins < 5 then
+                local remainingWins = 5 - jackpotData.consecutiveWins
+                msg:SendMessage("JACKPOT_PROGRESS", "WHISPER", { remainingWins }, game.name)
+            elseif jackpotData.consecutiveWins == 5 then
+                local jackpotAmount = game.bet * 5
+                game.payout = game.payout + jackpotAmount
+                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount) }, game.name)
+                jackpotData.consecutiveWins = 0
+            end
+
+            self:UpdatePlayerJackpotData(game.guid, jackpotData.consecutiveWins, jackpotData.lastBetAmount)
+        end
     else
         game.outcome = "LOSE"
+        if addon:GetDatabaseValue("jackpotEnabled") then
+            self:UpdatePlayerJackpotData(game.guid, 0, 0)
+        end
     end
 
     self:SaveGame(guid)
@@ -120,18 +174,6 @@ function gameUtil:ProcessOutcome(guid)
         return
     end
     msg:SendMessage("GAME_OUTCOME", "WHISPER", { sum, game.outcome }, game.name)
-end
-
-function gameUtil.CheckRolls(_, _, message)
-    if message:match(const.ROLL_MESSAGE_MATCH) then
-        local roll = tonumber(message:match("%d")) or 0
-        for guid, game in pairs(gameUtil.activeGames) do
-            if game.choice and #game.rolls < 2 then
-                table.insert(game.rolls, roll)
-                gameUtil:ProcessOutcome(guid)
-            end
-        end
-    end
 end
 
 function gameUtil:HandleTradeRequest(playerName)
