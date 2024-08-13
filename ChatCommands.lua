@@ -26,7 +26,9 @@ function chatCommands.OnWhisper(_, _, ...)
     local ruleCommands = {
         "rules", "rule", "info", "howtoplay", "howdoiplay", "howtogamble"
     }
-
+    local jackpotCommands = {
+        "jackpot", "jack pot"
+    }
     if matchCommand(message, ruleCommands) or message:lower():match("how do i play") then
         msg:SendMessage("RULES", "WHISPER",
             { { sender }, {}, {}, { C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("minBet") * 10000), C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("maxBet") * 10000) }, {} },
@@ -34,6 +36,13 @@ function chatCommands.OnWhisper(_, _, ...)
         return
     end
 
+    if matchCommand(message, jackpotCommands) then
+        msg:SendMessage("NO_FORMAT", "WHISPER",
+            {
+                "Win a Jackpot 5 times your bet by winning 5 consecutive bets of the same amount. Changing the bet amount resets the count. For example, five consecutive wins at 10,000g each nets you a 50,000g Jackpot!" },
+            sender)
+        return
+    end
     if not message:match("!") then return end
     local command = message:match("!([%a%d]+)")
     if not command then return end
