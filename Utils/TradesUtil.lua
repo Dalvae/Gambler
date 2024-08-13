@@ -102,13 +102,13 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
             { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(minBet) },
             tempTrade.name)
         bet = 0
-    elseif bet > 0 then
+    elseif bet > 0 and playerAcceptedTrade then
         Private.UI:ShowGreenSquare()
     end
 
     tempTrade.bet = min(bet, maxBet)
 
-    if tempTrade.bet > 0 and (tempTrade.newBetDuringPayout or not tempTrade.pendingPayout) and not betSaved then
+    if tempTrade.bet > 0 and (tempTrade.newBetDuringPayout or not tempTrade.pendingPayout) and not betSaved and tradeAccepted then
         tradesUtil:SaveTrade(tempTrade)
         betSaved = true
         tempTrade.newBetDuringPayout = false
