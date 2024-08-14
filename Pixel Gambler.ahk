@@ -32,7 +32,7 @@ DenyTradeButtonX := 444
 DenyTradeButtonY := 161
 
 ; For Active Gambler
-ColorActiveGamble := 0xCC00CC
+ColorActiveGamble := 0xCC00CC ; Purple
 ActiveCordsX := 1410
 ActiveCordsY := 430 ; Coordinates of Active Gamble
 RollDiceCordsX := 1470
@@ -105,16 +105,16 @@ CheckColorAndPerformAction() {
                     Sleep(Random(100, 700))  
                     Click
             }
-            ; Check for Active Gamble purple color (fourth priority)
+            ; Check for Active Gamble purple color (fourth priority) to Roll the dice
             else {
                 ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
-                if ActiveGambleColor = ColorActiveGamble {
+                if IsColorSimilar(ActiveGambleColor, ColorActiveGamble, 15) {
                     RandomSleep := Random(100, 700)
                     MouseMove(adjRollDice.x, adjRollDice.y)
-                    ToolTip("Sleep timer for Active Gamble: " RandomSleep " ms")
-                    SetTimer(() => ToolTip(), -3000)  ; Remove tooltip after 3 seconds
                     Sleep(RandomSleep)
                     Click
+                    ToolTip("Rolled dice. Sleep: " RandomSleep " ms")
+                    SetTimer(() => ToolTip(), -3000) 
                 }
                 ; Anti-AFK movement (lowest priority)
                 else {
