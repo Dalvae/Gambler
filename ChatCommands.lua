@@ -50,9 +50,16 @@ function chatCommands.OnWhisper(_, _, ...)
         if matchCommand(message, jackpotCommands) then
             if addon:GetDatabaseValue("jackpotEnabled") then
                 msg:SendMessage("NO_FORMAT", "WHISPER",
-                    {
-                        "Earn bonuses for consecutive wins without changing your bet: 3 wins in a row gives a 0.5x bonus, 5 wins in a row gives a 5x jackpot, and 7 wins in a row gives a 7x jackpot. For example, consistently betting 10,000g earns an extra 5,000g after 3 wins, 50,000g after 5 wins, and another 70,000g after 7 wins! Changing your bet amount resets the count." },
+                    { "Earn bonuses for consecutive wins without changing your bet:" },
                     sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 3 wins in a row gives a 0.5x bonus" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 5 wins in a row gives a 5x jackpot" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 7 wins in a row gives a 7x jackpot" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "For example, consistently betting 10,000g earns:" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- An extra 5,000g after 3 wins" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 50,000g after 5 wins" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- Another 70,000g after 7 wins" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "Changing your bet amount resets the count." }, sender)
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "The Jackpot feature is currently disabled." }, sender)
             end
@@ -95,16 +102,22 @@ function chatCommands.OnWhisper(_, _, ...)
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Dice Rolls (Newest > Oldest): " .. rollsString },
                     sender)
             else
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "No se encontraron juegos recientes." }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "We didn't find recent games" }, sender)
             end
         elseif command == "vip" then
-            if addon:GetDatabaseValue("loyaltyEnabled") then
+            if addon:GetDatabaseValue("loyalty") then
                 if vipUtil:CanUseCommands(senderGUID) then
                     local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
-                    msg:SendMessage("NO_FORMAT", "WHISPER",
-                        { string.format("Your VIP Bonus is currently at %s. Use !payout to get this amount traded.",
-                            C_CurrencyInfo.GetCoinText(currentLoyalty)) },
-                        sender)
+                    if currentLoyalty > 0 then
+                        msg:SendMessage("NO_FORMAT", "WHISPER",
+                            { string.format("Your VIP Bonus is currently at %s. Use !payout to get this amount traded.",
+                                C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+                            sender)
+                    else
+                        msg:SendMessage("NO_FORMAT", "WHISPER",
+                            { "Your VIP Bonus is currently at 0. Keep playing to earn VIP Bonus!" },
+                            sender)
+                    end
                 else
                     msg:SendMessage("NO_FORMAT", "WHISPER",
                         { "You don't have access to VIP commands." },
@@ -116,8 +129,7 @@ function chatCommands.OnWhisper(_, _, ...)
                     sender)
             end
         elseif command == "payout" then
-            -- Check if the loyalty system is enabled
-            if addon:GetDatabaseValue("loyaltyEnabled") then
+            if addon:GetDatabaseValue("loyalty") then -- Cambiado de "loyaltyEnabled" a "loyalty"
                 if vipUtil:CanUseCommands(senderGUID) then
                     local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
                     local minLoyaltyPayout = 10000000 -- 1000 gold in copper
@@ -146,7 +158,6 @@ function chatCommands.OnWhisper(_, _, ...)
                         sender)
                 end
             else
-                -- VIP program is disabled, send the new message
                 msg:SendMessage("NO_FORMAT", "WHISPER",
                     { "!payout is currently disabled. Whisper me !jackpot for info on how to win a !jackpot 7x your bet." },
                     sender)
