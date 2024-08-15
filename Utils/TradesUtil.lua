@@ -84,10 +84,29 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
 
     Private.UI:HideSquares()
 
-    if tempTrade.pendingPayout and bet > 0 and tradeAccepted then
-        addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, 0)
-        tempTrade.pendingPayout = nil
-        tempTrade.newBetDuringPayout = true
+    local loyaltyAdded = false
+
+    if tempTrade.pendingPayout and playerMoney > 0 and tradeAccepted then
+        -- Lógica para manejar el pago de ganancias anteriores
+        local remainingPayout = max(0, tempTrade.pendingPayout - playerMoney)
+        addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, remainingPayout)
+
+        if remainingPayout == 0 then
+            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, 0)
+        end
+
+        tempTrade.pendingPayout = remainingPayout
+        tempTrade.newBetDuringPayout = (bet > 0)
+
+        -- Añadir puntos de lealtad por el pago
+        if addon:GetDatabaseValue("loyalty") and not loyaltyAdded then
+            local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
+            local loyaltyBonus = math.floor((playerMoney * loyaltyPercent) / 100)
+            local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
+            local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
+            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
+            loyaltyAdded = true
+        end
     end
 
     if bet > maxBet and playerAcceptedTrade then
@@ -108,13 +127,20 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
 
     tempTrade.bet = min(bet, maxBet)
 
-    if tempTrade.bet > 0 and (tempTrade.newBetDuringPayout or not tempTrade.pendingPayout) and not betSaved and tradeAccepted then
+    if tempTrade.bet > 0 and not betSaved and tradeAccepted then
+        -- Añadir puntos de lealtad por la nueva apuesta
+        if addon:GetDatabaseValue("loyalty") and not loyaltyAdded then
+            local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
+            local loyaltyBonus = math.floor((tempTrade.bet * loyaltyPercent) / 100)
+            local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
+            local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
+            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
+        end
+
         tradesUtil:SaveTrade(tempTrade)
         betSaved = true
-        tempTrade.newBetDuringPayout = false
     end
 end
-
 
 local function completeTrade(_, _, _, message)
     if message == ERR_TRADE_COMPLETE then
