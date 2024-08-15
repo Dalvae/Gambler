@@ -151,20 +151,6 @@ function chatCommands.OnWhisper(_, _, ...)
                     { "!payout is currently disabled. Whisper me !jackpot for info on how to win a !jackpot 7x your bet." },
                     sender)
             end
-        elseif command == "testwin" then
-            local senderGUID = select(12, ...)
-            local game = gameUtil.activeGames[senderGUID]
-
-            if game and game.choice then
-                -- Forzar las dos tiradas de dados con valor 1
-                game.rolls[1] = 1
-                game.rolls[2] = 1
-
-                gameUtil:ProcessOutcome(senderGUID)
-                print("Comand test win process for", sender)
-            else
-                print("There is no active game for ", sender)
-            end
         end
     end
 end
