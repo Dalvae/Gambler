@@ -208,9 +208,6 @@ function gameUtil:CreateDBCallback()
     addon:CreateDatabaseCallback("activeGame", gameUtil.NewGame)
 end
 
---Testwin
--- Here a logic to roll two rolls of 1
-
 -- Event registrations
 addon:RegisterEvent("CHAT_MSG_SYSTEM", "GameUtil.lua", gameUtil.CheckRolls)
 addon:RegisterEvent("CHAT_MSG_WHISPER", "GameUtil.lua", gameUtil.SelectChoice)
