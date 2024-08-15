@@ -115,6 +115,7 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
     end
 end
 
+
 local function completeTrade(_, _, _, message)
     if message == ERR_TRADE_COMPLETE then
         if tempTrade.pendingPayout and not tempTrade.newBetDuringPayout then
@@ -132,17 +133,7 @@ local function completeTrade(_, _, _, message)
             local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
             local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
 
-            local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
-            if not pendingPayouts[tempTrade.guid] or pendingPayouts[tempTrade.guid] == 0 then
-                local minLoyaltyBet = 10000000 -- 1000 gold in copper
-                if tempTrade.bet >= minLoyaltyBet then
-                    addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
-                else
-                    msg:SendMessage("LOYALTY_MIN_BET_NOT_MET", "WHISPER",
-                        { C_CurrencyInfo.GetCoinText(minLoyaltyBet) },
-                        tempTrade.name)
-                end
-            end
+            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
         end
 
         tempTrade = {
