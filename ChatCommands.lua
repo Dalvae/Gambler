@@ -35,7 +35,7 @@ function chatCommands.OnWhisper(_, _, ...)
         msg:SendMessage("RULES3", "WHISPER", {}, sender)
         msg:SendMessage("RULES4", "WHISPER",
             { C_CurrencyInfo.GetCoinText(addon:GetDatabaseValue("minBet") * 10000), C_CurrencyInfo.GetCoinText(addon
-            :GetDatabaseValue("maxBet") * 10000) }, sender)
+                :GetDatabaseValue("maxBet") * 10000) }, sender)
 
         if addon:GetDatabaseValue("jackpotEnabled") then
             msg:SendMessage("RULEJACKPOT", "WHISPER", {}, sender)
@@ -104,16 +104,23 @@ function chatCommands.OnWhisper(_, _, ...)
         local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
         local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
         local previousPay = pendingPayouts[senderGUID] or 0
+        local minLoyaltyPayout = 10000000     -- 1000 gold in copper
 
         if previousPay > 0 then
             msg:SendMessage("NO_FORMAT", "WHISPER",
                 { string.format("You already have a pending payout of %s. Trade me to receive it.",
                     C_CurrencyInfo.GetCoinText(previousPay)) },
                 sender)
-        elseif currentLoyalty > 0 then
+        elseif currentLoyalty >= minLoyaltyPayout then
             addon:SetDatabaseValue("pendingPayout." .. senderGUID, currentLoyalty)
             msg:SendMessage("NO_FORMAT", "WHISPER",
                 { string.format("Trade me for your payout of your %s VIP Bonus.",
+                    C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+                sender)
+        elseif currentLoyalty > 0 and currentLoyalty < minLoyaltyPayout then
+            msg:SendMessage("NO_FORMAT", "WHISPER",
+                { string.format("You need at least %s in VIP Bonus to request a payout. Your current bonus is %s.",
+                    C_CurrencyInfo.GetCoinText(minLoyaltyPayout),
                     C_CurrencyInfo.GetCoinText(currentLoyalty)) },
                 sender)
         else
