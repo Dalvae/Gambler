@@ -18,6 +18,7 @@ local defaultDatabase = {
     loyaltyClosed = false,
     loyaltyPercent = 5,
     jackpotEnabled = false,
+    jackpotx7Enabled = false,
 }
 
 ---@class GambleAddon : RasuAddonBase

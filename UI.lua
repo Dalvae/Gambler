@@ -115,6 +115,10 @@ function ui:LoadUI()
         "Enable Jackpot", "Enable the Jackpot feature for consecutive wins.",
         "jackpotEnabled")
 
+    local jackpotx7Enabled = ui:CreateCheckbox(mainFrame,
+        { { "TOPLEFT", jackpotEnabled, "LEFT", 150, 15 } },
+        "7x", " 7x",
+        "jackpotx7Enabled")
     local loyaltyPercent = CreateFrame("EditBox", nil, mainFrame, "InputBoxInstructionsTemplate")
     loyaltyPercent:SetSize(150, 20)
     loyaltyPercent:SetPoint("TOPLEFT", jackpotEnabled, "BOTTOMLEFT", 10, -2.5)

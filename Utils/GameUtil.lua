@@ -138,7 +138,7 @@ function gameUtil:ProcessOutcome(guid)
             game.payout = game.payout * 2
         end
 
-        -- Jackpot logic
+        -- Enhanced Jackpot logic
         if addon:GetDatabaseValue("jackpotEnabled") then
             local jackpotData = self:GetPlayerJackpotData(game.guid)
 
@@ -149,14 +149,28 @@ function gameUtil:ProcessOutcome(guid)
             end
             jackpotData.lastBetAmount = game.bet
 
-            if jackpotData.consecutiveWins < 5 then
-                local remainingWins = 5 - jackpotData.consecutiveWins
-                msg:SendMessage("JACKPOT_PROGRESS", "WHISPER", { remainingWins }, game.name)
+            local maxJackpotWins = addon:GetDatabaseValue("jackpotx7Enabled") and 7 or 5
+            -- Whisper current winstreak
+            msg:SendMessage("JACKPOT_PROGRESS", "WHISPER",
+                { jackpotData.consecutiveWins, maxJackpotWins }, game.name)
+
+            if jackpotData.consecutiveWins == 3 then
+                local bonusAmount = math.floor(game.bet * 0.5)
+                game.payout = game.payout + bonusAmount
+                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(bonusAmount), 3 }, game.name)
             elseif jackpotData.consecutiveWins == 5 then
                 local jackpotAmount = game.bet * 5
                 game.payout = game.payout + jackpotAmount
-                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount) }, game.name)
-                jackpotData.consecutiveWins = 0
+                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount), 5 }, game.name)
+
+                if not addon:GetDatabaseValue("jackpotx7Enabled") then
+                    jackpotData.consecutiveWins = 0 -- Reset if 7x jackpot is not enabled
+                end
+            elseif jackpotData.consecutiveWins == 7 and addon:GetDatabaseValue("jackpotx7Enabled") then
+                local jackpotAmount = game.bet * 7
+                game.payout = game.payout + jackpotAmount
+                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount), 7 }, game.name)
+                jackpotData.consecutiveWins = 0 -- Reset after 7x win
             end
 
             self:UpdatePlayerJackpotData(game.guid, jackpotData.consecutiveWins, jackpotData.lastBetAmount)
@@ -193,6 +207,9 @@ end
 function gameUtil:CreateDBCallback()
     addon:CreateDatabaseCallback("activeGame", gameUtil.NewGame)
 end
+
+--Testwin
+-- Here a logic to roll two rolls of 1
 
 -- Event registrations
 addon:RegisterEvent("CHAT_MSG_SYSTEM", "GameUtil.lua", gameUtil.CheckRolls)
