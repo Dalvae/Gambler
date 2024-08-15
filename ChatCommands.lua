@@ -51,7 +51,7 @@ function chatCommands.OnWhisper(_, _, ...)
             if addon:GetDatabaseValue("jackpotEnabled") then
                 msg:SendMessage("NO_FORMAT", "WHISPER",
                     {
-                        "Win a Jackpot 5 times your bet by winning 5 consecutive bets of the same amount. Changing the bet amount resets the count. For example, five consecutive wins at 10,000g each nets you a 50,000g Jackpot!" },
+                        "Earn bonuses for consecutive wins without changing your bet: 3 wins in a row gives a 0.5x bonus, 5 wins in a row gives a 5x jackpot, and 7 wins in a row gives a 7x jackpot. For example, consistently betting 10,000g earns an extra 5,000g after 3 wins, 50,000g after 5 wins, and another 70,000g after 7 wins! Changing your bet amount resets the count." },
                     sender)
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "The Jackpot feature is currently disabled." }, sender)
@@ -97,31 +97,58 @@ function chatCommands.OnWhisper(_, _, ...)
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "No se encontraron juegos recientes." }, sender)
             end
-        elseif command == "vip" and vipUtil:CanUseCommands(senderGUID) then
-            local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
-            msg:SendMessage("NO_FORMAT", "WHISPER",
-                { string.format("Your VIP Bonus is currently at %s. Use !payout to get this amount traded.",
-                    C_CurrencyInfo.GetCoinText(currentLoyalty)) },
-                sender)
-        elseif command == "payout" and vipUtil:CanUseCommands(senderGUID) then
-            local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
-            local minLoyaltyPayout = 10000000 -- 1000 gold in copper
-
-            if currentLoyalty >= minLoyaltyPayout then
-                addon:SetDatabaseValue("pendingPayout." .. senderGUID, currentLoyalty)
-                msg:SendMessage("NO_FORMAT", "WHISPER",
-                    { string.format("Trade me for your payout of your %s VIP Bonus.",
-                        C_CurrencyInfo.GetCoinText(currentLoyalty)) },
-                    sender)
-            elseif currentLoyalty > 0 and currentLoyalty < minLoyaltyPayout then
-                msg:SendMessage("NO_FORMAT", "WHISPER",
-                    { string.format("You need at least %s in VIP Bonus to request a payout. Your current bonus is %s.",
-                        C_CurrencyInfo.GetCoinText(minLoyaltyPayout),
-                        C_CurrencyInfo.GetCoinText(currentLoyalty)) },
-                    sender)
+        elseif command == "vip" then
+            if addon:GetDatabaseValue("loyaltyEnabled") then
+                if vipUtil:CanUseCommands(senderGUID) then
+                    local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
+                    msg:SendMessage("NO_FORMAT", "WHISPER",
+                        { string.format("Your VIP Bonus is currently at %s. Use !payout to get this amount traded.",
+                            C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+                        sender)
+                else
+                    msg:SendMessage("NO_FORMAT", "WHISPER",
+                        { "You don't have access to VIP commands." },
+                        sender)
+                end
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER",
-                    { "You don't have any VIP Bonus to payout at the moment." },
+                    { "!vip is currently disabled. Whisper me !jackpot for info on how to win a !jackpot 7x your bet." },
+                    sender)
+            end
+        elseif command == "payout" then
+            -- Check if the loyalty system is enabled
+            if addon:GetDatabaseValue("loyaltyEnabled") then
+                if vipUtil:CanUseCommands(senderGUID) then
+                    local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
+                    local minLoyaltyPayout = 10000000 -- 1000 gold in copper
+
+                    if currentLoyalty >= minLoyaltyPayout then
+                        addon:SetDatabaseValue("pendingPayout." .. senderGUID, currentLoyalty)
+                        msg:SendMessage("NO_FORMAT", "WHISPER",
+                            { string.format("Trade me for your payout of your %s VIP Bonus.",
+                                C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+                            sender)
+                    elseif currentLoyalty > 0 and currentLoyalty < minLoyaltyPayout then
+                        msg:SendMessage("NO_FORMAT", "WHISPER",
+                            { string.format(
+                                "You need at least %s in VIP Bonus to request a payout. Your current bonus is %s.",
+                                C_CurrencyInfo.GetCoinText(minLoyaltyPayout),
+                                C_CurrencyInfo.GetCoinText(currentLoyalty)) },
+                            sender)
+                    else
+                        msg:SendMessage("NO_FORMAT", "WHISPER",
+                            { "You don't have any VIP Bonus to payout at the moment." },
+                            sender)
+                    end
+                else
+                    msg:SendMessage("NO_FORMAT", "WHISPER",
+                        { "You don't have access to VIP commands." },
+                        sender)
+                end
+            else
+                -- VIP program is disabled, send the new message
+                msg:SendMessage("NO_FORMAT", "WHISPER",
+                    { "!payout is currently disabled. Whisper me !jackpot for info on how to win a !jackpot 7x your bet." },
                     sender)
             end
         elseif command == "testwin" then
