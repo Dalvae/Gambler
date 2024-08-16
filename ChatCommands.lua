@@ -128,13 +128,14 @@ function chatCommands.OnWhisper(_, _, ...)
                     sender)
             end
         elseif command == "payout" then
-            if addon:GetDatabaseValue("loyalty") then -- Cambiado de "loyaltyEnabled" a "loyalty"
+            if addon:GetDatabaseValue("loyalty") then
                 if vipUtil:CanUseCommands(senderGUID) then
                     local currentLoyalty = vipUtil:GetPlayerValue(senderGUID)
-                    local minLoyaltyPayout = 10000000 -- 1000 gold in copper
+                    local minLoyaltyPayout = 10000000 --
 
                     if currentLoyalty >= minLoyaltyPayout then
                         addon:SetDatabaseValue("pendingPayout." .. senderGUID, currentLoyalty)
+                        vipUtil:SetPlayerValue(senderGUID, 0)
                         msg:SendMessage("NO_FORMAT", "WHISPER",
                             { string.format("Trade me for your payout of your %s VIP Bonus.",
                                 C_CurrencyInfo.GetCoinText(currentLoyalty)) },
@@ -160,6 +161,20 @@ function chatCommands.OnWhisper(_, _, ...)
                 msg:SendMessage("NO_FORMAT", "WHISPER",
                     { "!payout is currently disabled. Whisper me !jackpot for info on how to win a !jackpot 7x your bet." },
                     sender)
+            end
+        elseif command == "testwin" then
+            local senderGUID = select(12, ...)
+            local game = gameUtil.activeGames[senderGUID]
+
+            if game and game.choice then
+                -- Forzar las dos tiradas de dados con valor 1
+                game.rolls[1] = 1
+                game.rolls[2] = 1
+
+                gameUtil:ProcessOutcome(senderGUID)
+                print("Comand test win process for", sender)
+            else
+                print("There is no active game for ", sender)
             end
         end
     end
