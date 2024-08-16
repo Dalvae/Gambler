@@ -4,10 +4,12 @@ local const = Private.constants
 local addon = Private.Addon
 local msg = Private.MessageUtil
 
-
 ---@class TradesUtil
 local tradesUtil = {}
 Private.TradesUtil = tradesUtil
+
+local MAX_BET_MULTIPLIER = 10000
+local MIN_BET_MULTIPLIER = 10000
 
 ---@return TradeInfo
 function tradesUtil:GetTrade()
@@ -26,8 +28,62 @@ end
 ---@field bet number
 ---@field payout number
 ---@field pendingPayout number
+---@field consecutiveWins number
+---@field lastBetAmount number
+---@field newBetDuringPayout boolean
 local tempTrade = {}
-local betSaved = false
+
+local function initializeTrade(unitGUID, unitName, pendingPayout)
+    return {
+        guid = unitGUID or "",
+        name = unitName,
+        bet = 0,
+        pendingPayout = pendingPayout,
+        payout = 0,
+        consecutiveWins = 0,
+        lastBetAmount = 0,
+        newBetDuringPayout = false
+    }
+end
+
+local function updatePendingPayout(playerMoney, tradeAccepted)
+    if tempTrade.pendingPayout and playerMoney > 0 and tradeAccepted then
+        local remainingPayout = math.max(0, tempTrade.pendingPayout - playerMoney)
+        addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, remainingPayout)
+        tempTrade.pendingPayout = remainingPayout
+        tempTrade.newBetDuringPayout = (tempTrade.bet > 0)
+    end
+end
+
+local function validateBet(bet, maxBet, minBet, playerAcceptedTrade)
+    if bet > maxBet and playerAcceptedTrade then
+        Private.UI:ShowRedSquare()
+        msg:SendMessage("OVER_MAX_BET", "WHISPER",
+            { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(maxBet) },
+            tempTrade.name)
+        return 0
+    elseif bet < minBet and bet > 0 and playerAcceptedTrade then
+        Private.UI:ShowRedSquare()
+        msg:SendMessage("UNDER_MIN_BET", "WHISPER",
+            { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(minBet) },
+            tempTrade.name)
+        return 0
+    elseif bet > 0 and playerAcceptedTrade then
+        Private.UI:ShowGreenSquare()
+    end
+    return math.min(bet, maxBet)
+end
+
+local function addLoyaltyBonus()
+    if addon:GetDatabaseValue("loyalty") then
+        local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
+        local loyaltyBonus = math.floor((tempTrade.bet * loyaltyPercent) / 100)
+        local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
+        local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
+        addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
+    end
+end
+
 local function newTrade()
     local unitGUID = UnitGUID("npc")
     local unitName, unitRealm = GetUnitName("npc", true)
@@ -39,7 +95,6 @@ local function newTrade()
     pendingPayout = pendingPayout and pendingPayout > 0 and pendingPayout or nil
     Private.UI:UpdatePendingPayoutText(pendingPayout, unitGUID)
 
-    betSaved = false
 
     if pendingPayout then
         C_Timer.NewTicker(.1, function(self)
@@ -59,16 +114,8 @@ local function newTrade()
     else
         Private.UI:HideSquares()
     end
-    tempTrade = {
-        guid = unitGUID or "",
-        name = unitName,
-        bet = 0,
-        pendingPayout = pendingPayout,
-        payout = 0,
-        consecutiveWins = 0,
-        lastBetAmount = 0,
-        newBetDuringPayout = false
-    }
+
+    tempTrade = initializeTrade(unitGUID, unitName, pendingPayout)
     return unitName
 end
 
@@ -77,104 +124,34 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
     local playerMoney = tonumber(GetPlayerTradeMoney()) or 0
     tempTrade.payout = playerMoney
 
-    local maxBet = addon:GetDatabaseValue("maxBet") * 10000
-    local minBet = addon:GetDatabaseValue("minBet") * 10000
+    local maxBet = addon:GetDatabaseValue("maxBet") * MAX_BET_MULTIPLIER
+    local minBet = addon:GetDatabaseValue("minBet") * MIN_BET_MULTIPLIER
     local tradeAccepted = (event == "TRADE_ACCEPT_UPDATE" and playerAccepted == 1 and targetAccepted == 1)
     local playerAcceptedTrade = (event == "TRADE_ACCEPT_UPDATE" and targetAccepted == 1)
 
     Private.UI:HideSquares()
 
-    local loyaltyAdded = false
+    updatePendingPayout(playerMoney, tradeAccepted)
 
-    if tempTrade.pendingPayout and playerMoney > 0 and tradeAccepted then
-        -- Lógica para manejar el pago de ganancias anteriores
-        local remainingPayout = max(0, tempTrade.pendingPayout - playerMoney)
-        addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, remainingPayout)
+    tempTrade.bet = validateBet(bet, maxBet, minBet, playerAcceptedTrade)
 
-        if remainingPayout == 0 then
-            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, 0)
-        end
-
-        tempTrade.pendingPayout = remainingPayout
-        tempTrade.newBetDuringPayout = (bet > 0)
-
-        -- Añadir puntos de lealtad por el pago
-        if addon:GetDatabaseValue("loyalty") and not loyaltyAdded then
-            local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
-            local loyaltyBonus = math.floor((playerMoney * loyaltyPercent) / 100)
-            local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
-            local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
-            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
-            loyaltyAdded = true
-        end
-    end
-
-    if bet > maxBet and playerAcceptedTrade then
-        Private.UI:ShowRedSquare()
-        msg:SendMessage("OVER_MAX_BET", "WHISPER",
-            { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(maxBet) },
-            tempTrade.name)
-        bet = 0
-    elseif bet < minBet and bet > 0 and playerAcceptedTrade then
-        Private.UI:ShowRedSquare()
-        msg:SendMessage("UNDER_MIN_BET", "WHISPER",
-            { C_CurrencyInfo.GetCoinText(bet), C_CurrencyInfo.GetCoinText(minBet) },
-            tempTrade.name)
-        bet = 0
-    elseif bet > 0 and playerAcceptedTrade then
-        Private.UI:ShowGreenSquare()
-    end
-
-    tempTrade.bet = min(bet, maxBet)
-
-    if tempTrade.bet > 0 and not betSaved and tradeAccepted then
-        -- Añadir puntos de lealtad por la nueva apuesta
-        if addon:GetDatabaseValue("loyalty") and not loyaltyAdded then
-            local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
-            local loyaltyBonus = math.floor((tempTrade.bet * loyaltyPercent) / 100)
-            local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
-            local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
-            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
-        end
-
+    if tempTrade.bet > 0 and tradeAccepted then
+        addLoyaltyBonus()
         tradesUtil:SaveTrade(tempTrade)
-        betSaved = true
     end
 end
 
 local function completeTrade(_, _, _, message)
     if message == ERR_TRADE_COMPLETE then
         if tempTrade.pendingPayout and not tempTrade.newBetDuringPayout then
-            local remainingPayout = max(0, tempTrade.pendingPayout - tempTrade.payout)
+            local remainingPayout = math.max(0, tempTrade.pendingPayout - tempTrade.payout)
             addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, remainingPayout)
-
-            if remainingPayout == 0 then
-                addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, 0)
-            end
         end
 
-        if tempTrade.bet > 0 and addon:GetDatabaseValue("loyalty") then
-            local loyaltyPercent = addon:GetDatabaseValue("loyaltyPercent")
-            local loyaltyBonus = math.floor((tempTrade.bet * loyaltyPercent) / 100)
-            local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount")
-            local previousLoyalty = loyaltyValues[tempTrade.guid] or 0
-
-            addon:SetDatabaseValue("loyaltyAmount." .. tempTrade.guid, previousLoyalty + loyaltyBonus)
-        end
-
-        tempTrade = {
-            guid = tempTrade.guid,
-            name = tempTrade.name,
-            bet = 0,
-            pendingPayout = nil,
-            payout = 0,
-            consecutiveWins = 0,
-            lastBetAmount = 0,
-            newBetDuringPayout = false
-        }
-        betSaved = false
+        tempTrade = initializeTrade(tempTrade.guid, tempTrade.name, nil)
     end
 end
+
 addon:RegisterEvent("TRADE_SHOW", "TradesUtil.lua", newTrade)
 addon:RegisterEvent("TRADE_MONEY_CHANGED", "TradesUtil.lua", updateTrade)
 addon:RegisterEvent("TRADE_ACCEPT_UPDATE", "TradesUtil.lua", updateTrade)
