@@ -26,7 +26,7 @@ end
 ---@param playerGUID string
 ---@param status boolean|?
 function vipUtil:SetPlayerStatus(playerGUID, status)
-    addon:SetDatabaseValue("loyaltyList."..playerGUID, status)
+    addon:SetDatabaseValue("loyaltyList." .. playerGUID, status)
 end
 
 ---@return table
@@ -55,4 +55,12 @@ function vipUtil:CanUseCommands(guid)
     local isClosed = addon:GetDatabaseValue("loyaltyClosed")
     local hasLoyalty = self:GetPlayerStatus(guid)
     return (isLoyaltyOn and isClosed and hasLoyalty) or (isLoyaltyOn and not isClosed) or false
+end
+
+---@param playerGUID string
+---@param value number
+function vipUtil:SetPlayerValue(playerGUID, value)
+    local loyaltyValues = addon:GetDatabaseValue("loyaltyAmount") or {}
+    loyaltyValues[playerGUID] = value
+    addon:SetDatabaseValue("loyaltyAmount", loyaltyValues)
 end
