@@ -117,12 +117,12 @@ local function newTrade()
     end
 
     tempTrade = initializeTrade(unitGUID, unitName, pendingPayout)
-    -- Start the 5-second timer
+    --  Antitroll
     if tradeTimer then
         tradeTimer:Cancel()
     end
-    tradeTimer = C_Timer.NewTimer(7, function()
-        if tempTrade.bet == 0 then
+    tradeTimer = C_Timer.NewTimer(10, function()
+        if tempTrade.bet == 0 and TradeFrame and TradeFrame:IsShown() then
             Private.UI:ShowRedSquare()
             msg:SendMessage("NO_BET_DETECTED", "WHISPER", {}, tempTrade.name)
         end
@@ -157,6 +157,9 @@ end
 
 local function completeTrade(_, _, _, message)
     if message == ERR_TRADE_COMPLETE then
+        if tradeTimer then
+            tradeTimer:Cancel()
+        end
         if tempTrade.pendingPayout and not tempTrade.newBetDuringPayout then
             local remainingPayout = math.max(0, tempTrade.pendingPayout - tempTrade.payout)
             addon:SetDatabaseValue("pendingPayout." .. tempTrade.guid, remainingPayout)
