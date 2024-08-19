@@ -109,25 +109,120 @@ function ui:LoadUI()
         { { "TOPLEFT", loyalty, "BOTTOMLEFT", 0, -2.5 } },
         "Invite VIP Only", "Only Enable VIP for selected Players (/gambe vip [add/remove/list] <playername>).",
         "loyaltyClosed")
-
-    local jackpotEnabled = ui:CreateCheckbox(mainFrame,
-        { { "TOPLEFT", loyaltyInvite, "BOTTOMLEFT", 0, -2.5 } },
-        "Enable Jackpot", "Enable the Jackpot feature for consecutive wins.",
-        "jackpotEnabled")
-
-    local jackpotx7Enabled = ui:CreateCheckbox(mainFrame,
-        { { "TOPLEFT", jackpotEnabled, "LEFT", 150, 15 } },
-        "7x", " 7x",
-        "jackpotx7Enabled")
     local loyaltyPercent = CreateFrame("EditBox", nil, mainFrame, "InputBoxInstructionsTemplate")
     loyaltyPercent:SetSize(150, 20)
-    loyaltyPercent:SetPoint("TOPLEFT", jackpotEnabled, "BOTTOMLEFT", 10, -2.5)
+    loyaltyPercent:SetPoint("TOPLEFT", loyaltyInvite, "BOTTOMLEFT", 10, -2.5)
     loyaltyPercent:ClearFocus()
     loyaltyPercent:SetAutoFocus(false)
     loyaltyPercent:SetNumeric(true)
-    loyaltyPercent:SetText(addon:GetDatabaseValue("loyaltyPercent") or "")
+    loyaltyPercent:SetText(addon:GetDatabaseValue("loyaltyPercent") or "5")
     loyaltyPercent.Instructions:SetText("Enter VIP %")
     loyaltyPercent:HookScript("OnTextChanged", loyaltyUpdate)
+
+
+    local jackpotEnabled = ui:CreateCheckbox(mainFrame,
+        { { "TOPLEFT", loyaltyPercent, "BOTTOMLEFT", -10, -2.5 } },
+        "Enable Jackpot", "Enable the Jackpot feature for consecutive wins.",
+        "jackpotEnabled")
+
+    local function CreateJackpotCheckbox(parent, point, text, databaseKey)
+        local container = CreateFrame("Frame", nil, parent)
+        container:SetSize(80, 24)
+        local checkbox = CreateFrame("CheckButton", nil, container, "ChatConfigCheckButtonTemplate")
+        checkbox:SetSize(24, 24)
+        checkbox:SetPoint("LEFT", container, "LEFT", 0, 0)
+        checkbox:SetHitRectInsets(0, -24, 0, 0)
+
+        checkbox.Text:SetText(text)
+        checkbox.Text:SetPoint("LEFT", checkbox, "RIGHT", 2, 0)
+
+        checkbox.tooltip = "Enable " .. text .. " Jackpot"
+        checkbox:SetChecked(addon:GetDatabaseValue(databaseKey))
+        checkbox:HookScript("OnClick", function(self)
+            addon:SetDatabaseValue(databaseKey, self:GetChecked())
+        end)
+
+        checkbox:SetNormalAtlas("checkbox-minimal")
+        checkbox:SetPushedAtlas("checkbox-minimal")
+
+        do
+            local tex = checkbox:CreateTexture()
+            tex:SetAtlas("checkmark-minimal")
+            checkbox:SetCheckedTexture(tex)
+        end
+        do
+            local tex = checkbox:CreateTexture()
+            tex:SetAtlas("checkmark-minimal-disabled")
+            checkbox:SetDisabledCheckedTexture(tex)
+        end
+
+        container:SetPoint(unpack(point))
+
+        container:EnableMouse(false)
+
+        return checkbox
+    end
+
+    local function CreateJackpotInput(parent, point, defaultValue, databaseKey)
+        local input = CreateFrame("EditBox", nil, parent, "InputBoxInstructionsTemplate")
+        input:SetSize(40, 20)
+        input:SetPoint(unpack(point))
+        input:SetNumeric(true)
+        input:SetText(addon:GetDatabaseValue(databaseKey) or defaultValue)
+        input:SetAutoFocus(false)
+        input:SetScript("OnTextChanged", function(self)
+            local value = tonumber(self:GetText()) or defaultValue
+            addon:SetDatabaseValue(databaseKey, value)
+        end)
+        input.Instructions:ClearAllPoints()
+        input.Instructions:SetPoint("RIGHT", input, "RIGHT", -5, 0)
+        input.Instructions:SetText("%")
+        return input
+    end
+
+    local jackpotx3Checkbox = CreateJackpotCheckbox(mainFrame, { "TOPLEFT", jackpotEnabled, "BOTTOMLEFT", 20, -5 }, "3x",
+        "jackpotx3Enabled")
+    local jackpotx3Input = CreateJackpotInput(mainFrame, { "LEFT", jackpotx3Checkbox, "RIGHT", 25, 0 }, "25",
+        "jackpotx3Percent")
+
+    local jackpotx5Checkbox = CreateJackpotCheckbox(mainFrame, { "TOPLEFT", jackpotx3Checkbox, "BOTTOMLEFT", 0, -5 },
+        "5x", "jackpotx5Enabled")
+    local jackpotx5Input = CreateJackpotInput(mainFrame, { "LEFT", jackpotx5Checkbox, "RIGHT", 25, 0 }, "250",
+        "jackpotx5Percent")
+
+    local jackpotx7Checkbox = CreateJackpotCheckbox(mainFrame, { "TOPLEFT", jackpotx5Checkbox, "BOTTOMLEFT", 0, -5 },
+        "7x", "jackpotx7Enabled")
+    local jackpotx7Input = CreateJackpotInput(mainFrame, { "LEFT", jackpotx7Checkbox, "RIGHT", 25, 0 }, "500",
+        "jackpotx7Percent")
+
+    local function ToggleJackpotInputs(show)
+        jackpotx3Checkbox:SetShown(show)
+        jackpotx3Input:SetShown(show)
+        jackpotx5Checkbox:SetShown(show)
+        jackpotx5Input:SetShown(show)
+        jackpotx7Checkbox:SetShown(show)
+        jackpotx7Input:SetShown(show)
+    end
+
+    jackpotEnabled:HookScript("OnClick", function(self)
+        ToggleJackpotInputs(self:GetChecked())
+    end)
+
+    local function ToggleInputEnabled(checkbox, input)
+        checkbox:HookScript("OnClick", function(self)
+            input:SetEnabled(self:GetChecked())
+        end)
+    end
+
+    ToggleInputEnabled(jackpotx3Checkbox, jackpotx3Input)
+    ToggleInputEnabled(jackpotx5Checkbox, jackpotx5Input)
+    ToggleInputEnabled(jackpotx7Checkbox, jackpotx7Input)
+
+    -- Inicializar el estado de los inputs
+    ToggleJackpotInputs(addon:GetDatabaseValue("jackpotEnabled"))
+    jackpotx3Input:SetEnabled(addon:GetDatabaseValue("jackpotx3Enabled"))
+    jackpotx5Input:SetEnabled(addon:GetDatabaseValue("jackpotx5Enabled"))
+    jackpotx7Input:SetEnabled(addon:GetDatabaseValue("jackpotx7Enabled"))
 
     local minBet = CreateFrame("EditBox", nil, mainFrame, "InputBoxInstructionsTemplate")
     minBet:SetHeight(20)

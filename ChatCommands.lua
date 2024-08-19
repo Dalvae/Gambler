@@ -10,6 +10,39 @@ local gameUtil = Private.GameUtil
 local chatCommands = {}
 Private.ChatCommands = chatCommands
 
+local function sendJackpotRules(sender)
+    if addon:GetDatabaseValue("jackpotEnabled") then
+        local jackpotRules = {}
+
+        if addon:GetDatabaseValue("jackpotx3Enabled") then
+            local percent = addon:GetDatabaseValue("jackpotx3Percent")
+            table.insert(jackpotRules, string.format("Win %d%% of your bet for 3 consecutive wins", percent))
+        end
+
+        if addon:GetDatabaseValue("jackpotx5Enabled") then
+            local percent = addon:GetDatabaseValue("jackpotx5Percent")
+            table.insert(jackpotRules, string.format("%d%% for 5 wins", percent))
+        end
+
+        if addon:GetDatabaseValue("jackpotx7Enabled") then
+            local percent = addon:GetDatabaseValue("jackpotx7Percent")
+            table.insert(jackpotRules, string.format("and %d%% for 7 wins", percent))
+        end
+
+        local rulesText = table.concat(jackpotRules, ", ")
+        if #jackpotRules > 0 then
+            rulesText = rulesText .. ", all with the same bet amount."
+        else
+            rulesText = "No jackpot bonuses are currently active."
+        end
+
+        msg:SendMessage("RULEJACKPOT", "WHISPER", { rulesText }, sender)
+    else
+        msg:SendMessage("NO_FORMAT", "WHISPER", { "The Jackpot feature is currently disabled." }, sender)
+    end
+end
+
+
 local function matchCommand(message, commands)
     message = message:lower():gsub("^%s*!?%s*", "")
     for _, cmd in ipairs(commands) do
@@ -40,7 +73,7 @@ function chatCommands.OnWhisper(_, _, ...)
                     :GetDatabaseValue("maxBet") * 10000) }, sender)
 
             if addon:GetDatabaseValue("jackpotEnabled") then
-                msg:SendMessage("RULEJACKPOT", "WHISPER", {}, sender)
+                sendJackpotRules(sender)
             end
 
             msg:SendMessage("RULES5", "WHISPER", {}, sender)
@@ -52,20 +85,42 @@ function chatCommands.OnWhisper(_, _, ...)
                 msg:SendMessage("NO_FORMAT", "WHISPER",
                     { "Earn bonuses for consecutive wins without changing your bet:" },
                     sender)
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 3 wins in a row gives a 0.25x bonus" }, sender)
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 5 wins in a row gives a 2.5x jackpot" }, sender)
+
+                local activeJackpots = {}
+                local example = {}
+                local exampleBet = 10000 * 100 -- 10,000 gold in copper
+
+                if addon:GetDatabaseValue("jackpotx3Enabled") then
+                    local percent = addon:GetDatabaseValue("jackpotx3Percent")
+                    table.insert(activeJackpots, string.format("- 3 wins in a row gives a %d%% bonus", percent))
+                    table.insert(example, string.format("%s after 3 wins",
+                        C_CurrencyInfo.GetCoinText(math.floor(exampleBet * percent / 100))))
+                end
+
+                if addon:GetDatabaseValue("jackpotx5Enabled") then
+                    local percent = addon:GetDatabaseValue("jackpotx5Percent")
+                    table.insert(activeJackpots, string.format("- 5 wins in a row gives a %d%% jackpot", percent))
+                    table.insert(example, string.format("%s after 5 wins",
+                        C_CurrencyInfo.GetCoinText(math.floor(exampleBet * percent / 100))))
+                end
 
                 if addon:GetDatabaseValue("jackpotx7Enabled") then
-                    msg:SendMessage("NO_FORMAT", "WHISPER", { "- 7 wins in a row gives a 5x jackpot" }, sender)
-                    msg:SendMessage("NO_FORMAT", "WHISPER",
-                        {
-                            "For example, consistently betting 10,000g earns an extra 2,500g after 3 wins, 25,000g after 5 wins, and another 50,000g after 7 wins! Changing your bet amount resets the count." },
-                        sender)
-                else
-                    msg:SendMessage("NO_FORMAT", "WHISPER",
-                        {
-                            "For example, consistently betting 10,000g earns an extra 2,500g after 3 wins and 25,000g after 5 wins! Changing your bet amount resets the count." },
-                        sender)
+                    local percent = addon:GetDatabaseValue("jackpotx7Percent")
+                    table.insert(activeJackpots, string.format("- 7 wins in a row gives a %d%% jackpot", percent))
+                    table.insert(example, string.format("%s after 7 wins",
+                        C_CurrencyInfo.GetCoinText(math.floor(exampleBet * percent / 100))))
+                end
+
+                for _, jackpot in ipairs(activeJackpots) do
+                    msg:SendMessage("NO_FORMAT", "WHISPER", { jackpot }, sender)
+                end
+
+                if #example > 0 then
+                    local exampleText = string.format(
+                        "For example, consistently betting 10,000g earns an extra %s! Changing your bet amount resets the count.",
+                        table.concat(example, ", ")
+                    )
+                    msg:SendMessage("NO_FORMAT", "WHISPER", { exampleText }, sender)
                 end
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "The Jackpot feature is currently disabled." }, sender)

@@ -38,8 +38,7 @@ constants.MESSAGE_TYPES = {
     ["RULES3"] = "Exactly 7: Win x4",
     ["RULES4"] = "Bet Limits: %s - %s",
     ["RULES5"] = "Open Trade when ready. Good Luck",
-    ["RULEJACKPOT"] =
-    "!jackpot: Win 0.25x your bet for 3 consecutive wins, 2.5x for 5 wins, and 5x for 7 wins, all with the same bet amount.",
+    ["RULEJACKPOT"] = "!jackpot: %s",
     ["PERSONAL_STATS"] = "Your Stats: %dW, %dL, +%s, -%s",
     ["NUM_ENTRY"] = "%d. %s",
     ["NO_FORMAT"] = "%s",

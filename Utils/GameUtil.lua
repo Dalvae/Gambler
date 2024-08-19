@@ -124,6 +124,57 @@ function gameUtil:UpdatePlayerJackpotData(guid, consecutiveWins, lastBetAmount)
     addon:SetDatabaseValue("playerJackpotData", jackpotData)
 end
 
+function gameUtil:ProcessJackpot(game)
+    if not addon:GetDatabaseValue("jackpotEnabled") then
+        return 0
+    end
+
+    local jackpotData = self:GetPlayerJackpotData(game.guid)
+
+    if game.bet == jackpotData.lastBetAmount then
+        jackpotData.consecutiveWins = jackpotData.consecutiveWins + 1
+    else
+        jackpotData.consecutiveWins = 1
+    end
+    jackpotData.lastBetAmount = game.bet
+
+    local bonusAmount = 0
+    local jackpotHit = false
+
+    local function checkJackpot(level, enabled, percent)
+        if jackpotData.consecutiveWins == level and addon:GetDatabaseValue(enabled) then
+            bonusAmount = math.floor(game.bet * (addon:GetDatabaseValue(percent) / 100))
+            jackpotHit = true
+            msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(bonusAmount), level }, game.name)
+        end
+    end
+
+    checkJackpot(3, "jackpotx3Enabled", "jackpotx3Percent")
+    checkJackpot(5, "jackpotx5Enabled", "jackpotx5Percent")
+    checkJackpot(7, "jackpotx7Enabled", "jackpotx7Percent")
+
+    local highestEnabledJackpot = 0
+    if addon:GetDatabaseValue("jackpotx7Enabled") then
+        highestEnabledJackpot = 7
+    elseif addon:GetDatabaseValue("jackpotx5Enabled") then
+        highestEnabledJackpot = 5
+    elseif addon:GetDatabaseValue("jackpotx3Enabled") then
+        highestEnabledJackpot = 3
+    end
+
+    if not jackpotHit then
+        msg:SendMessage("JACKPOT_PROGRESS", "WHISPER",
+            { jackpotData.consecutiveWins, highestEnabledJackpot }, game.name)
+    else
+        if jackpotData.consecutiveWins >= highestEnabledJackpot then
+            jackpotData.consecutiveWins = 0
+        end
+    end
+
+    self:UpdatePlayerJackpotData(game.guid, jackpotData.consecutiveWins, jackpotData.lastBetAmount)
+    return bonusAmount
+end
+
 function gameUtil:ProcessOutcome(guid)
     local game = self.activeGames[guid]
     if not game or game.outcome or #game.rolls < 2 then return end
@@ -138,48 +189,10 @@ function gameUtil:ProcessOutcome(guid)
             game.payout = game.payout * 2
         end
 
-        -- Enhanced Jackpot logic
-        if addon:GetDatabaseValue("jackpotEnabled") then
-            local jackpotData = self:GetPlayerJackpotData(game.guid)
-
-            if game.bet == jackpotData.lastBetAmount then
-                jackpotData.consecutiveWins = jackpotData.consecutiveWins + 1
-            else
-                jackpotData.consecutiveWins = 1
-            end
-            jackpotData.lastBetAmount = game.bet
-
-            local maxJackpotWins = addon:GetDatabaseValue("jackpotx7Enabled") and 7 or 5
-            -- Whisper current winstreak
-            msg:SendMessage("JACKPOT_PROGRESS", "WHISPER",
-                { jackpotData.consecutiveWins, maxJackpotWins }, game.name)
-
-            if jackpotData.consecutiveWins == 3 then
-                local bonusAmount = math.floor(game.bet * 0.25)
-                game.payout = game.payout + bonusAmount
-                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(bonusAmount), 3 }, game.name)
-            elseif jackpotData.consecutiveWins == 5 then
-                local jackpotAmount = game.bet * 2.5
-                game.payout = game.payout + jackpotAmount
-                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount), 5 }, game.name)
-
-                if not addon:GetDatabaseValue("jackpotx7Enabled") then
-                    jackpotData.consecutiveWins = 0 -- Reset if 7x jackpot is not enabled
-                end
-            elseif jackpotData.consecutiveWins == 7 and addon:GetDatabaseValue("jackpotx7Enabled") then
-                local jackpotAmount = game.bet * 5
-                game.payout = game.payout + jackpotAmount
-                msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount), 7 }, game.name)
-                jackpotData.consecutiveWins = 0 -- Reset after 7x win
-            end
-
-            self:UpdatePlayerJackpotData(game.guid, jackpotData.consecutiveWins, jackpotData.lastBetAmount)
-        end
+        game.payout = game.payout + self:ProcessJackpot(game)
     else
         game.outcome = "LOSE"
-        if addon:GetDatabaseValue("jackpotEnabled") then
-            self:UpdatePlayerJackpotData(game.guid, 0, 0)
-        end
+        self:UpdatePlayerJackpotData(game.guid, 0, 0)
     end
 
     self:SaveGame(guid)
