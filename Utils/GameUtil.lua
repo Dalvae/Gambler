@@ -155,11 +155,11 @@ function gameUtil:ProcessOutcome(guid)
                 { jackpotData.consecutiveWins, maxJackpotWins }, game.name)
 
             if jackpotData.consecutiveWins == 3 then
-                local bonusAmount = math.floor(game.bet * 0.5)
+                local bonusAmount = math.floor(game.bet * 0.25)
                 game.payout = game.payout + bonusAmount
                 msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(bonusAmount), 3 }, game.name)
             elseif jackpotData.consecutiveWins == 5 then
-                local jackpotAmount = game.bet * 5
+                local jackpotAmount = game.bet * 2.5
                 game.payout = game.payout + jackpotAmount
                 msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount), 5 }, game.name)
 
@@ -167,7 +167,7 @@ function gameUtil:ProcessOutcome(guid)
                     jackpotData.consecutiveWins = 0 -- Reset if 7x jackpot is not enabled
                 end
             elseif jackpotData.consecutiveWins == 7 and addon:GetDatabaseValue("jackpotx7Enabled") then
-                local jackpotAmount = game.bet * 7
+                local jackpotAmount = game.bet * 5
                 game.payout = game.payout + jackpotAmount
                 msg:SendMessage("JACKPOT_WIN", "WHISPER", { C_CurrencyInfo.GetCoinText(jackpotAmount), 7 }, game.name)
                 jackpotData.consecutiveWins = 0 -- Reset after 7x win

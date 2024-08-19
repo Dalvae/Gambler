@@ -26,8 +26,10 @@ constants.MESSAGE_TYPES = {
     ["CHOICE_PICKED"] = "Your Choice '%s' was saved! Rolling the Dice... Good Luck!",
     ["GAME_OUTCOME"] = "The Dice rolled %d! That's a %s for you.",
     ["WON_PAYOUT"] = "You just won %s! Open trade to receive winnings!",
-    ["UNDER_MIN_BET"] = "You're trying to bet %s which is under the minimum Bet that is currently: %s!",
-    ["OVER_MAX_BET"] = "You're about to bet %s even though the max allowed Bet is currently: %s!",
+    ["UNDER_MIN_BET"] =
+    "You're trying to bet %s which is under the minimum Bet that is currently: %s! {Cross}TRADE CANCELED{Cross}",
+    ["OVER_MAX_BET"] =
+    "You're about to bet %s even though the max allowed Bet is currently: %s!{Cross}TRADE CANCELED{Cross}",
     ["PENDING_PAYOUT"] = "I owe you %s. Trade me anytime and I'll give it back to you.",
     ["BUSY_WITH_GAME"] = "I'm sorry, I'm in another gamble. Can you wait a second please?",
     ["RULES1"] = "Welcome, %s!, Casino Rules (Guess the dice total):",
@@ -36,7 +38,7 @@ constants.MESSAGE_TYPES = {
     ["RULES4"] = "Bet Limits: %s - %s",
     ["RULES5"] = "Open Trade when ready. Good Luck",
     ["RULEJACKPOT"] =
-    "!jackpot: Win .5x your bet for 3 consecutive wins, 5x for 5 wins, and 7x for 7 wins, all with the same bet amount.",
+    "!jackpot: Win 0.25x your bet for 3 consecutive wins, 2.5x for 5 wins, and 5x for 7 wins, all with the same bet amount.",
     ["PERSONAL_STATS"] = "Your Stats: %dW, %dL, +%s, -%s",
     ["NUM_ENTRY"] = "%d. %s",
     ["NO_FORMAT"] = "%s",

@@ -52,13 +52,21 @@ function chatCommands.OnWhisper(_, _, ...)
                 msg:SendMessage("NO_FORMAT", "WHISPER",
                     { "Earn bonuses for consecutive wins without changing your bet:" },
                     sender)
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 3 wins in a row gives a 0.5x bonus" }, sender)
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 5 wins in a row gives a 5x jackpot" }, sender)
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 7 wins in a row gives a 7x jackpot" }, sender)
-                msg:SendMessage("NO_FORMAT", "WHISPER",
-                    {
-                        "For example, consistently betting 10,000g earns an extra 5,000g after 3 wins, 50,000g after 5 wins, and another 70,000g after 7 wins! Changing your bet amount resets the count." },
-                    sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 3 wins in a row gives a 0.25x bonus" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "- 5 wins in a row gives a 2.5x jackpot" }, sender)
+
+                if addon:GetDatabaseValue("jackpotx7Enabled") then
+                    msg:SendMessage("NO_FORMAT", "WHISPER", { "- 7 wins in a row gives a 5x jackpot" }, sender)
+                    msg:SendMessage("NO_FORMAT", "WHISPER",
+                        {
+                            "For example, consistently betting 10,000g earns an extra 2,500g after 3 wins, 25,000g after 5 wins, and another 50,000g after 7 wins! Changing your bet amount resets the count." },
+                        sender)
+                else
+                    msg:SendMessage("NO_FORMAT", "WHISPER",
+                        {
+                            "For example, consistently betting 10,000g earns an extra 2,500g after 3 wins and 25,000g after 5 wins! Changing your bet amount resets the count." },
+                        sender)
+                end
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "The Jackpot feature is currently disabled." }, sender)
             end
