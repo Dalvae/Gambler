@@ -22,7 +22,11 @@
         "PanelTemplates_SelectTab",
         "PanelTemplates_DeselectTab",
         "TradePlayerInputMoneyFrameSilver",
-        "TradePlayerInputMoneyFrameCopper"
+        "TradePlayerInputMoneyFrameCopper",
+        "UIDropDownMenu_Initialize",
+        "UIDropDownMenu_CreateInfo",
+        "UIDropDownMenu_AddButton",
+        "CloseDropDownMenus"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
