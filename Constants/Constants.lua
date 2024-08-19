@@ -32,6 +32,7 @@ constants.MESSAGE_TYPES = {
     "You're about to bet %s even though the max allowed Bet is currently: %s!{Cross}TRADE CANCELED{Cross}",
     ["PENDING_PAYOUT"] = "I owe you %s. Trade me anytime and I'll give it back to you.",
     ["BUSY_WITH_GAME"] = "I'm sorry, I'm in another gamble. Can you wait a second please?",
+    ["NO_BET_DETECTED"] = "No bet detected {cross}TRADE CANCELED{cross}",
     ["RULES1"] = "Welcome, %s!, Casino Rules (Guess the dice total):",
     ["RULES2"] = "Over 7 / Under 7: Win x2",
     ["RULES3"] = "Exactly 7: Win x4",

@@ -32,6 +32,7 @@ end
 ---@field lastBetAmount number
 ---@field newBetDuringPayout boolean
 local tempTrade = {}
+local tradeTimer
 
 local function initializeTrade(unitGUID, unitName, pendingPayout)
     return {
@@ -116,6 +117,16 @@ local function newTrade()
     end
 
     tempTrade = initializeTrade(unitGUID, unitName, pendingPayout)
+    -- Start the 5-second timer
+    if tradeTimer then
+        tradeTimer:Cancel()
+    end
+    tradeTimer = C_Timer.NewTimer(7, function()
+        if tempTrade.bet == 0 then
+            Private.UI:ShowRedSquare()
+            msg:SendMessage("NO_BET_DETECTED", "WHISPER", {}, tempTrade.name)
+        end
+    end)
     return unitName
 end
 
@@ -136,6 +147,9 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
     tempTrade.bet = validateBet(bet, maxBet, minBet, playerAcceptedTrade)
 
     if tempTrade.bet > 0 and tradeAccepted then
+        if tradeTimer then
+            tradeTimer:Cancel()
+        end
         addLoyaltyBonus()
         tradesUtil:SaveTrade(tempTrade)
     end
