@@ -42,8 +42,14 @@ ActiveCordsY := 430
 RollDiceCordsX := 1470
 RollDiceCordsY := 575
 
-antiAFKInterval := 300000
+antiAFKInterval := 120000
 lastMoveTime := 0
+
+global isActive := false
+global isActionInProgress := false
+global lastActionTime := 0
+global lastRollDiceTime := 0
+global rollDiceCooldown := 5000 
 
 AdjustCoordinates(x, y) {
     originalWidth := 1920
@@ -57,90 +63,149 @@ AdjustCoordinates(x, y) {
 
 F3::
 {
-    static isActive := false
-    if (isActive := !isActive)
+    global isActive
+    isActive := !isActive
+    if (isActive)
     {
         SetTimer(CheckColorAndPerformAction, 1000)
-        ToolTip("Script activated")
-        SetTimer(() => ToolTip(), -3000)
+        ShowTooltip("Script activated", 3000)
     }
     else
     {
         SetTimer(CheckColorAndPerformAction, 0)
-        ToolTip("Script deactivated")
-        SetTimer(() => ToolTip(), -3000)
+        ShowTooltip("Script deactivated", 3000)
     }
 }
+
 
 CheckColorAndPerformAction() {
-    ; Adjust coordinates based on current resolution
-    adjColor := AdjustCoordinates(ColorX, ColorY)
-    adjClick := AdjustCoordinates(ClickX, ClickY)
-    adjDenyTradeButton := AdjustCoordinates(DenyTradeButtonX, DenyTradeButtonY)
-    adjTradeButton := AdjustCoordinates(TradeButtonX, TradeButtonY)
-    adjActive := AdjustCoordinates(ActiveCordsX, ActiveCordsY)
-    adjRollDice := AdjustCoordinates(RollDiceCordsX, RollDiceCordsY)
-    adjTradeWindow := AdjustCoordinates(TradeWindowColorX, TradeWindowColorY)
+    global isActive, isActionInProgress, wowid1, lastActionTime, lastRollDiceTime, rollDiceCooldown
+    
+    if (!isActive || isActionInProgress || !WinActive("ahk_id " wowid1))
+        return
 
-    ; Check for warning color (highest priority)
-    ActualColor := PixelGetColor(adjColor.x, adjColor.y, "RGB")
-    if IsColorSimilar(ActualColor, ColorWarning, 15) {
-        PerformAction(adjClick.x, adjClick.y)
-        ShowTooltip("Acepting Warning")
-    }
-    ; Check for red color (second priority)
-    else {
-        
-        DenyTradeColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
-        if IsColorSimilar(DenyTradeColor, NoTradeWindowColor, 20) {
-            PerformAction(adjDenyTradeButton.x, adjDenyTradeButton.y)
-            ShowTooltip("Denaying Trade")
+    isActionInProgress := true
+
+    try {
+        ; Adjust coordinates based on current resolution
+        adjColor := AdjustCoordinates(ColorX, ColorY)
+        adjClick := AdjustCoordinates(ClickX, ClickY)
+        adjDenyTradeButton := AdjustCoordinates(DenyTradeButtonX, DenyTradeButtonY)
+        adjTradeButton := AdjustCoordinates(TradeButtonX, TradeButtonY)
+        adjActive := AdjustCoordinates(ActiveCordsX, ActiveCordsY)
+        adjRollDice := AdjustCoordinates(RollDiceCordsX, RollDiceCordsY)
+        adjTradeWindow := AdjustCoordinates(TradeWindowColorX, TradeWindowColorY)
+
+        ; Check for warning color accept Warning after trade accept (highest priority)
+        ActualColor := PixelGetColor(adjColor.x, adjColor.y, "RGB")
+
+        currentTime := A_TickCount
+        if (currentTime - lastActionTime < 3000) {
+            return
         }
-        ; Check for green color (third priority)
+        if IsColorSimilar(ActualColor, ColorWarning, 15) {
+            PerformAction(adjClick.x, adjClick.y, "AcceptWarning")
+        }
+        ; Check for red color Deny Trades (second priority)
         else {
-            TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
-            if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {             
-                PerformAction(adjTradeButton.x, adjTradeButton.y)
-                ShowTooltip("Acepting Trade")
+            DenyTradeColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
+            if IsColorSimilar(DenyTradeColor, NoTradeWindowColor, 20) {
+                PerformAction(adjDenyTradeButton.x, adjDenyTradeButton.y, "DenyTrade")
             }
-            ; Check for Active Gamble purple color (fourth priority) to Roll the dice
+            ; Check for green color Accept trades(third priority)
             else {
-                ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
-                if IsColorSimilar(ActiveGambleColor, ColorActiveGamble, 15) {
-                    PerformAction(adjRollDice.x, adjRollDice.y)
-                    ShowTooltip("Rolling Dice")
+                TradeWindowActualColor := PixelGetColor(adjTradeWindow.x, adjTradeWindow.y, "RGB")
+                if IsColorSimilar(TradeWindowActualColor, TradeWindowColor, 20) {             
+                    PerformAction(adjTradeButton.x, adjTradeButton.y, "AcceptTrade")
                 }
-                ; Anti-AFK movement (lowest priority)
+                ; Check for Active Gamble purple color (fourth priority) to Roll the dice
                 else {
-                    PerformAntiAFK()
+                    ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
+                    if IsColorSimilar(ActiveGambleColor, ColorActiveGamble, 20) {
+                        PerformAction(adjRollDice.x, adjRollDice.y, "RollDice")
+                        lastRollDiceTime := currentTime
+                    }
+                    ; Anti-AFK movement (lowest priority)
+                    else {
+                        PerformAntiAFK()
+                    } 
                 }
             }
         }
+    }
+    catch as err {
+        ShowTooltip("Error: " . err.Message, 5000)
+    }
+    finally {
+        isActionInProgress := false
     }
 }
 
-PerformAction(x, y) {
-    MouseMove(x, y)
-    Sleep(Random(100, 300))  ; Reduced delay range
-    Click
-    ; Sleep(500)  ; Added cooldown after action
+PerformAction(x, y, action := "") {
+    switch action {
+        case "RollDice":
+            ShowTooltip("Rolling Dice")
+            MouseMove(x, y)
+            Sleep(Random(3000, 4000))
+            Click()
+            lastActionTime := A_TickCount
+            lastRollDiceTime := A_TickCount
+        case "AcceptWarning":
+            ShowTooltip("Accepting Warning")
+            MouseMove(x, y)
+            Sleep(Random(100, 300))
+            Click()
+            lastActionTime := A_TickCount
+        case "DenyTrade":
+            ShowTooltip("Denying Trade")
+            MouseMove(x, y)
+            Sleep(Random(100, 300))
+            Click()
+            lastActionTime := A_TickCount
+        case "AcceptTrade":
+            ShowTooltip("Accepting Trade")
+            MouseMove(x, y)
+            Sleep(Random(100, 300))
+            Click()
+            lastActionTime := A_TickCount
+        default:
+            MouseMove(x, y)
+            Sleep(Random(100, 300))
+            Click()
+            lastActionTime := A_TickCount
+    }
 }
 
 PerformAntiAFK() {
     global lastMoveTime, antiAFKInterval
     currentTime := A_TickCount
     if (currentTime - lastMoveTime > antiAFKInterval) {
-        Send("{Left down}")
-        Sleep(10)
-        Send("{Left up}")
-        Sleep(500)
-        Send("{Right down}")
-        Sleep(10)
-        Send("{Right up}")
+        randomAction := Random(1, 4)
+        
+        MovementAction(key1, key2) {
+            movementDuration := Random(100, 300)
+            Send("{" . key1 . " down}")
+            Sleep(movementDuration)
+            Send("{" . key1 . " up}")
+            Sleep(Random(50, 150))  ; Short pause between movements
+            Send("{" . key2 . " down}")
+            Sleep(movementDuration)  ; Use the same duration for the reverse movement
+            Send("{" . key2 . " up}")
+        }
+
+        Switch randomAction {
+            Case 1: MovementAction("W", "S")
+            Case 2: MovementAction("A", "D")
+            Case 3: MovementAction("S", "W")
+            Case 4: MovementAction("D", "A")
+        }
+
+        Sleep(Random(50, 150))  ; Short pause before jumping
+        Send("{Space}")  ; Jump after movement
         lastMoveTime := currentTime
+        ShowTooltip("Anti-AFK Movement")
     }
 }
 
-SetTimer(CheckColorAndPerformAction, 1000)  ; Changed to 1000ms interval
 
 #HotIf
