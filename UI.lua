@@ -459,21 +459,64 @@ function ui:LoadUI()
         end
     end
 
+    local GRACE_PERIOD = 5 -- Tiempo de gracia en segundos
+
     function ui:UpdateGameDisplay(index)
         local gameInfo = activeGames[index]
         local r, g, b, a = 0, 0, 0, 1
+        local tradeWindowOpen = TradeFrame and TradeFrame:IsVisible()
+        local currentTime = GetTime()
 
-        if gameInfo then
+        if tradeWindowOpen then
+            r, g, b = 1, 1, 0 -- Amarillo
+        elseif gameInfo then
+            local isActive = not gameInfo.outcome
+            local needsRoll = gameInfo.choice and not gameInfo.outcome and #(gameInfo.rolls or {}) < 2
+            local multipleActiveGames = false
+            local anyGameHasChoice = false
+
+            -- Verificar si hay múltiples juegos activos y si alguno tiene elección
+            for _, game in ipairs(activeGames) do
+                if not game.outcome then
+                    multipleActiveGames = true
+                    if game.choice then
+                        anyGameHasChoice = true
+                        break
+                    end
+                end
+            end
+
             currentGame:SetText(string.format("Current Game ('%s'):", gameInfo.outcome or "ACTIVE"))
             gamePlayer:SetText(string.format("Player: %s", gameInfo.name))
             gameBet:SetText(string.format("Bet: %s", C_CurrencyInfo.GetCoinText(gameInfo.bet)))
 
-            local needsRoll = gameInfo.choice and not gameInfo.outcome and #(gameInfo.rolls or {}) < 2
+            if isActive then
+                if multipleActiveGames then
+                    if anyGameHasChoice then
+                        -- Aplicar tiempo de gracia si al menos un juego tiene elección
+                        if not gameInfo.graceStartTime then
+                            gameInfo.graceStartTime = currentTime
+                        end
 
-            if needsRoll then
-                r, g, b = 0.8, 0, 0.8
-            elseif not gameInfo.outcome then
-                r, g, b = 1, 1, 1
+                        if currentTime - gameInfo.graceStartTime > GRACE_PERIOD then
+                            if needsRoll then
+                                r, g, b = 0.8, 0, 0.8 -- Morado después del tiempo de gracia si necesita roll
+                            else
+                                r, g, b = 1, 1, 1     -- Blanco después del tiempo de gracia si no necesita roll
+                            end
+                        else
+                            r, g, b = 1, 1, 1 -- Blanco durante el tiempo de gracia
+                        end
+                    else
+                        r, g, b = 1, 1, 1 -- Blanco si ningún juego tiene elección
+                    end
+                else
+                    if needsRoll then
+                        r, g, b = 0.8, 0, 0.8 -- Morado si necesita roll y no hay múltiples juegos activos
+                    else
+                        r, g, b = 1, 1, 1     -- Blanco si no necesita roll y no hay múltiples juegos activos
+                    end
+                end
             end
         else
             currentGame:SetText("Current Game (No Game)")
@@ -499,6 +542,23 @@ function ui:LoadUI()
             end
         end
     end
+
+    local function UpdateTimer()
+        ui:UpdateGameDisplay(mainFrame.selectedTab)
+    end
+
+    C_Timer.NewTicker(1, UpdateTimer)
+
+    local function OnTradeShow()
+        ui:UpdateGameDisplay(mainFrame.selectedTab)
+    end
+
+    local function OnTradeHide()
+        ui:UpdateGameDisplay(mainFrame.selectedTab)
+    end
+
+    TradeFrame:HookScript("OnShow", OnTradeShow)
+    TradeFrame:HookScript("OnHide", OnTradeHide)
 
     ---@param forceState boolean|?
     function ui:ToggleVisibility(forceState)
