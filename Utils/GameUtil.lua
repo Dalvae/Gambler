@@ -81,7 +81,8 @@ end
 local gameCounter = 0
 function gameUtil:SaveGame(guid)
     local game = self.activeGames[guid]
-    local currentTime = time()
+    if not game then return end
+
     gameCounter = gameCounter + 1
     local key = tostring(gameCounter)
 
@@ -94,23 +95,28 @@ function gameUtil:SaveGame(guid)
         choice = game.choice,
         outcome = game.outcome,
         timeKey = key,
-        time = currentTime
+        time = time()
     }
 
+    local completeGames = addon:GetDatabaseValue("completeGames") or {}
+    completeGames[key] = gameToSave
+    addon:SetDatabaseValue("completeGames", completeGames)
 
-    addon:SetDatabaseValue("completeGames." .. key, gameToSave)
-    local rollSum = game.rolls and (game.rolls[1] + game.rolls[2]) or "No rolls"
-
+    -- Reiniciar el caché del historial para asegurar que se actualice en la próxima recuperación
     Private.StatsUtil.historyCache = {
         DB = {},
         indexedDB = {},
         lastUpdate = 0
     }
+
     if game.outcome == "WIN" then
-        local pendingPayouts = addon:GetDatabaseValue("pendingPayout")
+        local pendingPayouts = addon:GetDatabaseValue("pendingPayout") or {}
         local previousPay = pendingPayouts[game.guid] or 0
-        addon:SetDatabaseValue("pendingPayout." .. game.guid, previousPay + game.payout)
+        pendingPayouts[game.guid] = previousPay + game.payout
+        addon:SetDatabaseValue("pendingPayout", pendingPayouts)
         msg:SendMessage("WON_PAYOUT", "WHISPER", { C_CurrencyInfo.GetCoinText(game.payout) }, game.name)
+    elseif game.outcome == "LOSE" and addon:GetDatabaseValue("whisperLose") then
+        msg:SendMessage("GAME_OUTCOME", "WHISPER", { game.rolls[1] + game.rolls[2], game.outcome }, game.name)
     end
 
     self.activeGames[guid] = nil

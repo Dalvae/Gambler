@@ -164,7 +164,7 @@ function chatCommands.OnWhisper(_, _, ...)
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Dice Rolls (Newest > Oldest): " .. rollsString },
                     sender)
             else
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "We didn't find recent games" }, sender)
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "We didn't find any recent games" }, sender)
             end
         elseif command == "vip" then
             if addon:GetDatabaseValue("loyalty") then

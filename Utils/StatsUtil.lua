@@ -62,11 +62,8 @@ function statsUtil:GetHistoryGames(gameCount)
     local history = self:GetHistory()
     if history and history.indexedDB then
         for i = 1, math.min(gameCount, #history.indexedDB) do
-            local game = history.indexedDB[i]
-            tinsert(games, game)
-            local rollSum = game.rolls and (game.rolls[1] + game.rolls[2]) or "No rolls"
+            table.insert(games, history.indexedDB[i])
         end
-    else
     end
     return games
 end
