@@ -281,7 +281,7 @@ function ui:LoadUI()
         TradeFrame.GreenSquare = TradeFrame:CreateTexture(nil, "OVERLAY")
         TradeFrame.GreenSquare:SetSize(20, 20)
         TradeFrame.GreenSquare:SetPoint("LEFT", TradeFrame, "RIGHT", 5, 0)
-        TradeFrame.GreenSquare:SetColorTexture(0, 1, 0, 0.8)
+        TradeFrame.GreenSquare:SetColorTexture(0, 1, 0, 1)
         TradeFrame.GreenSquare:Hide()
     end
 
@@ -289,7 +289,7 @@ function ui:LoadUI()
         TradeFrame.RedSquare = TradeFrame:CreateTexture(nil, "OVERLAY")
         TradeFrame.RedSquare:SetSize(20, 20)
         TradeFrame.RedSquare:SetPoint("LEFT", TradeFrame, "RIGHT", 5, 0)
-        TradeFrame.RedSquare:SetColorTexture(1, 0, 0, 0.8)
+        TradeFrame.RedSquare:SetColorTexture(1, 0, 0, 1)
         TradeFrame.RedSquare:Hide()
     end
 
