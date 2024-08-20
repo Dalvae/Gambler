@@ -52,6 +52,26 @@ function gameUtil.SelectChoice(...)
     if const.CHOICES[message:upper()] then
         game.choice = message:upper()
         msg:SendMessage("CHOICE_PICKED", "WHISPER", { message }, game.name)
+
+        -- Verificar si todos los juegos activos tienen una elección
+        local allGamesHaveChoice = true
+        local activePlayersWithChoice = {}
+        for _, activeGame in pairs(gameUtil.activeGames) do
+            if not activeGame.choice then
+                allGamesHaveChoice = false
+                break
+            else
+                table.insert(activePlayersWithChoice, activeGame.name)
+            end
+        end
+
+        -- Si todos los juegos tienen una elección, enviar el mensaje "Rolling the dice, Good luck"
+        if allGamesHaveChoice then
+            local playerNames = table.concat(activePlayersWithChoice, " @")
+            local goodLuckMessage = "Rolling the dice, Good luck @" .. playerNames
+            SendChatMessage(goodLuckMessage, "SAY")
+        end
+
         gameUtil:UpdateUI()
         return
     end
