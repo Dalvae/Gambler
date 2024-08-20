@@ -140,7 +140,7 @@ local function updateTrade(_, event, playerAccepted, targetAccepted)
     local tradeAccepted = (event == "TRADE_ACCEPT_UPDATE" and playerAccepted == 1 and targetAccepted == 1)
     local playerAcceptedTrade = (event == "TRADE_ACCEPT_UPDATE" and targetAccepted == 1)
 
-    Private.UI:HideSquares()
+    -- Private.UI:HideSquares()
 
     updatePendingPayout(playerMoney, tradeAccepted)
 
