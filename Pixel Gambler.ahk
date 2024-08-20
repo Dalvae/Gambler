@@ -146,7 +146,7 @@ PerformAction(x, y, action := "") {
         case "RollDice":
             ShowTooltip("Rolling Dice")
             MouseMove(x, y)
-            Sleep(Random(3000, 4000))
+            Sleep(Random(100, 300))
             Click()
             lastActionTime := A_TickCount
             lastRollDiceTime := A_TickCount
