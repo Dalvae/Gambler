@@ -85,9 +85,9 @@
         
         if (!isActive || isActionInProgress || !WinActive("ahk_id " wowid1))
             return
-
+    
         isActionInProgress := true
-
+    
         try {
             ; Adjust coordinates based on current resolution
             adjColor := AdjustCoordinates(ColorX, ColorY)
@@ -95,12 +95,11 @@
             adjDenyTradeButton := AdjustCoordinates(DenyTradeButtonX, DenyTradeButtonY)
             adjTradeButton := AdjustCoordinates(TradeButtonX, TradeButtonY)
             adjActive := AdjustCoordinates(ActiveCordsX, ActiveCordsY)
-            adjRollDice := AdjustCoordinates(RollDiceCordsX, RollDiceCordsY)
             adjTradeWindow := AdjustCoordinates(TradeWindowColorX, TradeWindowColorY)
-
+    
             ; Check for warning color accept Warning after trade accept (highest priority)
             ActualColor := PixelGetColor(adjColor.x, adjColor.y, "RGB")
-
+    
             currentTime := A_TickCount
             if (currentTime - lastActionTime < 3000) {
                 return
@@ -124,7 +123,7 @@
                     else {
                         ActiveGambleColor := PixelGetColor(adjActive.x, adjActive.y, "RGB")
                         if IsColorSimilar(ActiveGambleColor, ColorActiveGamble, 20) {
-                            PerformAction(adjRollDice.x, adjRollDice.y, "RollDice")
+                            PerformAction(0, 0, "RollDice")  ; Coordinates are not used for RollDice anymore
                             lastRollDiceTime := currentTime
                         }
                         ; Anti-AFK movement (lowest priority)
@@ -142,16 +141,9 @@
             isActionInProgress := false
         }
     }
-
+    
     PerformAction(x, y, action := "") {
         global lastActionTime, lastRollDiceTime, isActive
-        
-        if (!isActive)
-            return
-    
-        SmoothMouseMove(x, y)
-        
-        Sleep(Random(30, 70))
         
         if (!isActive)
             return
@@ -159,29 +151,30 @@
         switch action {
             case "RollDice":
                 ShowTooltip("Rolling Dice")
-                Click()
+                Sleep(Random(1500, 3000))  ; Random delay between 1 and 2 seconds
+                Send("{6}")  ; Send the '6' key
                 lastActionTime := A_TickCount
                 lastRollDiceTime := A_TickCount
-            case "AcceptWarning":
-                ShowTooltip("Accepting Warning")
-                Click()
-                lastActionTime := A_TickCount
-            case "DenyTrade":
-                ShowTooltip("Denying Trade")
-                Click()
-                lastActionTime := A_TickCount
-            case "AcceptTrade":
-                ShowTooltip("Accepting Trade")
+            case "AcceptWarning", "DenyTrade", "AcceptTrade":
+                SmoothMouseMove(x, y)
+                Sleep(Random(300, 700))
+                if (!isActive)
+                    return
+                ShowTooltip(action)
                 Click()
                 lastActionTime := A_TickCount
             default:
+                SmoothMouseMove(x, y)
+                Sleep(Random(15, 35))
+                if (!isActive)
+                    return
                 Click()
                 lastActionTime := A_TickCount
         }
         
-        Sleep(Random(30, 70))
+        Sleep(Random(15, 35))
     }
-    
+
     SmoothMouseMove(targetX, targetY)
     {
         MouseGetPos(&startX, &startY)
