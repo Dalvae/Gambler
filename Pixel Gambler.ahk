@@ -29,8 +29,8 @@ ColorWarning := 0xDB9C15
 
 TradeWindowColorX := 478
 TradeWindowColorY := 430
-TradeWindowColor := 0x10DA12
-NoTradeWindowColor := 0xDD0F12
+TradeWindowColor := 0x00FF00
+NoTradeWindowColor := 0xFF0000
 TradeButtonX := 286
 TradeButtonY := 685
 DenyTradeButtonX := 444
