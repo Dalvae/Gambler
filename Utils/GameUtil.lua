@@ -44,11 +44,21 @@ function gameUtil.NewGame(_, tradeInfo)
 end
 
 function gameUtil.SelectChoice(...)
-    if not ... then return end
-    local guid = select(14, ...)
+    local args = { ... }
+    local guid, message
+
+    if #args == 2 then
+        -- Esta es una llamada de prueba
+        guid, message = args[1], args[2]
+    else
+        -- Esta es una llamada normal del juego
+        guid = select(14, ...)
+        message = select(3, ...)
+    end
+
     local game = gameUtil.activeGames[guid]
     if not game or game.choice then return end
-    local message = select(3, ...)
+
     if const.CHOICES[message:upper()] then
         game.choice = message:upper()
         msg:SendMessage("CHOICE_PICKED", "WHISPER", { message }, game.name)
@@ -78,13 +88,11 @@ function gameUtil.SelectChoice(...)
     msg:SendMessage("CHOICE_PENDING", "WHISPER", { game.name }, game.name)
 end
 
-local gameCounter = 0
 function gameUtil:SaveGame(guid)
     local game = self.activeGames[guid]
     if not game then return end
 
-    gameCounter = gameCounter + 1
-    local key = tostring(gameCounter)
+    local currentTime = time()
 
     local gameToSave = {
         guid = game.guid,
@@ -94,11 +102,19 @@ function gameUtil:SaveGame(guid)
         payout = game.payout,
         choice = game.choice,
         outcome = game.outcome,
-        timeKey = key,
-        time = time()
+        time = currentTime
     }
 
     local completeGames = addon:GetDatabaseValue("completeGames") or {}
+    local key = tostring(currentTime)
+    local counter = 0
+
+    -- Asegurar que la clave sea única
+    while completeGames[key] do
+        counter = counter + 1
+        key = tostring(currentTime) .. "_" .. counter
+    end
+
     completeGames[key] = gameToSave
     addon:SetDatabaseValue("completeGames", completeGames)
 

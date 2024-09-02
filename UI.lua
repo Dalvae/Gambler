@@ -459,7 +459,7 @@ function ui:LoadUI()
         end
     end
 
-    local GRACE_PERIOD = 5 -- Tiempo de gracia en segundos para múltiples juegos activos
+    local GRACE_PERIOD = 7 -- Tiempo de gracia en segundos para múltiples juegos activos
 
     -- local function SayGoodLuck()
     --     print("Attempting to say 'Good Luck'")

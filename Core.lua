@@ -107,10 +107,17 @@ function addon:OnEnable(...)
                 local tradeInfo = {
                     guid = targetGUID,
                     name = targetName,
-                    bet = 20000  -- 2g in copper
+                    bet = 20000 -- 2g in copper
                 }
                 gameUtil.NewGame(nil, tradeInfo)
-                self:FPrint("Test game started for target '%s' with a bet of 2g.", targetName)
+
+                -- Simular la elección del jugador
+                local choices = { "UNDER", "OVER", "7" }
+                local randomChoice = choices[math.random(#choices)]
+                gameUtil.SelectChoice(targetGUID, randomChoice)
+
+                self:FPrint("Test game started for target '%s' with a bet of 2g and choice '%s'.", targetName,
+                    randomChoice)
                 return
             end
         end
