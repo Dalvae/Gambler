@@ -152,16 +152,24 @@ function chatCommands.OnWhisper(_, _, ...)
             local last7Games = stats:GetHistoryGames(7)
             if last7Games and #last7Games > 0 then
                 local outcomes = {}
-                for i, game in ipairs(last7Games) do
+                local seenRolls = {}
+                for _, game in ipairs(last7Games) do
                     if game.rolls and #game.rolls == 2 then
-                        local sum = game.rolls[1] + game.rolls[2]
-                        table.insert(outcomes, string.format("[%d]", sum))
+                        local rollKey = game.time .. "_" .. table.concat(game.rolls, ",")
+                        if not seenRolls[rollKey] then
+                            seenRolls[rollKey] = true
+                            local sum = game.rolls[1] + game.rolls[2]
+                            table.insert(outcomes, string.format("[%d]", sum))
+                        end
                     else
                         table.insert(outcomes, "[?]")
                     end
+                    if #outcomes == 7 then
+                        break
+                    end
                 end
                 local rollsString = table.concat(outcomes, " ")
-                msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Dice Rolls (Newest > Oldest): " .. rollsString },
+                msg:SendMessage("NO_FORMAT", "WHISPER", { "Last 7 Unique Dice Rolls (Newest > Oldest): " .. rollsString },
                     sender)
             else
                 msg:SendMessage("NO_FORMAT", "WHISPER", { "We didn't find any recent games" }, sender)

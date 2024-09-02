@@ -30,6 +30,10 @@ function addon:OnEnable(...)
     gameUtil:CreateDBCallback()
     ui:LoadUI()
 
+    if not self.Database.gameCounter then
+        self:SetDatabaseValue("gameCounter", 0)
+    end
+
     self:RegisterCommand({ "gamble" }, function(_, args)
         if #args > 0 then
             if args[1] == "stats" then

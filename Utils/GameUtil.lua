@@ -92,8 +92,6 @@ function gameUtil:SaveGame(guid)
     local game = self.activeGames[guid]
     if not game then return end
 
-    local currentTime = time()
-
     local gameToSave = {
         guid = game.guid,
         name = game.name,
@@ -102,21 +100,16 @@ function gameUtil:SaveGame(guid)
         payout = game.payout,
         choice = game.choice,
         outcome = game.outcome,
-        time = currentTime
+        time = time()
     }
 
     local completeGames = addon:GetDatabaseValue("completeGames") or {}
-    local key = tostring(currentTime)
-    local counter = 0
+    local gameCounter = addon:GetDatabaseValue("gameCounter") or 0
+    gameCounter = gameCounter + 1
 
-    -- Asegurar que la clave sea única
-    while completeGames[key] do
-        counter = counter + 1
-        key = tostring(currentTime) .. "_" .. counter
-    end
-
-    completeGames[key] = gameToSave
+    completeGames[tostring(gameCounter)] = gameToSave
     addon:SetDatabaseValue("completeGames", completeGames)
+    addon:SetDatabaseValue("gameCounter", gameCounter)
 
     -- Reiniciar el caché del historial para asegurar que se actualice en la próxima recuperación
     Private.StatsUtil.historyCache = {
