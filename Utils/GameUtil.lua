@@ -16,6 +16,7 @@ local gameUtil = {
 }
 Private.GameUtil = gameUtil
 
+
 function gameUtil:UpdateUI()
     if Private.UI and Private.UI.UpdateGameState then
         local gamesArray = {}
@@ -48,41 +49,24 @@ function gameUtil.SelectChoice(...)
     local guid, message
 
     if #args == 2 then
-        -- Esta es una llamada de prueba
         guid, message = args[1], args[2]
     else
-        -- Esta es una llamada normal del juego
         guid = select(14, ...)
         message = select(3, ...)
     end
 
     local game = gameUtil.activeGames[guid]
-    if not game or game.choice then return end
+    if not game or game.choice then
+        return
+    end
 
     if const.CHOICES[message:upper()] then
         game.choice = message:upper()
-        msg:SendMessage("CHOICE_PICKED", "WHISPER", { message }, game.name)
-
-        -- Verificar si todos los juegos activos tienen una elección
-        local allGamesHaveChoice = true
-        local activePlayersWithChoice = {}
-        for _, activeGame in pairs(gameUtil.activeGames) do
-            if not activeGame.choice then
-                allGamesHaveChoice = false
-                break
-            else
-                table.insert(activePlayersWithChoice, activeGame.name)
-            end
-        end
-
-        -- Si todos los juegos tienen una elección, enviar el mensaje "Rolling the dice, Good luck"
-        if allGamesHaveChoice then
-            local playerNames = table.concat(activePlayersWithChoice, " @")
-            local goodLuckMessage = "Rolling the dice, Good luck @" .. playerNames
-            SendChatMessage(goodLuckMessage, "SAY")
-        end
-
-        gameUtil:UpdateUI()
+        -- Usar C_Timer.After para evitar errores de interfaz
+        C_Timer.After(0, function()
+            msg:SendMessage("CHOICE_PICKED", "WHISPER", { message }, game.name)
+            gameUtil:UpdateUI()
+        end)
         return
     end
     msg:SendMessage("CHOICE_PENDING", "WHISPER", { game.name }, game.name)
@@ -138,7 +122,13 @@ function gameUtil.CheckRolls(_, _, message)
         for guid, game in pairs(gameUtil.activeGames) do
             if game.choice and #game.rolls < 2 then
                 table.insert(game.rolls, roll)
-                gameUtil:ProcessOutcome(guid)
+
+                -- Solo procesar el resultado si tenemos dos rolls
+                if #game.rolls == 2 then
+                    C_Timer.After(0.1, function()
+                        gameUtil:ProcessOutcome(guid)
+                    end)
+                end
             end
         end
     end
@@ -212,7 +202,9 @@ end
 
 function gameUtil:ProcessOutcome(guid)
     local game = self.activeGames[guid]
-    if not game or game.outcome or #game.rolls < 2 then return end
+    if not game or game.outcome or #game.rolls < 2 then
+        return
+    end
 
     local sum = game.rolls[1] + game.rolls[2]
     local outcome = sum < 7 and "UNDER" or sum > 7 and "OVER" or "7"
@@ -223,19 +215,16 @@ function gameUtil:ProcessOutcome(guid)
         if outcome == "7" then
             game.payout = game.payout * 2
         end
-
         game.payout = game.payout + self:ProcessJackpot(game)
+        C_Timer.After(0.2, function()
+            msg:SendMessage("GAME_OUTCOME", "WHISPER", { sum, game.outcome }, game.name)
+        end)
     else
         game.outcome = "LOSE"
         self:UpdatePlayerJackpotData(game.guid, 0, 0)
     end
 
     self:SaveGame(guid)
-
-    if game.outcome == "LOSE" and not addon:GetDatabaseValue("whisperLose") then
-        return
-    end
-    msg:SendMessage("GAME_OUTCOME", "WHISPER", { sum, game.outcome }, game.name)
 end
 
 function gameUtil:HandleTradeRequest(playerName)

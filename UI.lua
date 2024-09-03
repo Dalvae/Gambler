@@ -470,6 +470,15 @@ function ui:LoadUI()
     local function RandomDelay()
         return math.random() + 1 -- Retorna un número aleatorio entre 1 y 2
     end
+    -- Añade esta función en algún lugar apropiado de tu código UI
+    function ui:ResetGameFlags()
+        self.goodLuckSaid = false
+        for _, game in ipairs(activeGames) do
+            game.rollDelayStart = nil
+            game.rollDelay = nil
+            game.graceStartTime = nil
+        end
+    end
 
     function ui:UpdateGameDisplay(index)
         local gameInfo = activeGames[index]
@@ -477,24 +486,22 @@ function ui:LoadUI()
         local tradeWindowOpen = TradeFrame and TradeFrame:IsVisible()
         local currentTime = GetTime()
 
-
         if tradeWindowOpen then
             r, g, b = 1, 1, 0 -- Amarillo
         elseif gameInfo then
             local isActive = not gameInfo.outcome
             local needsRoll = gameInfo.choice and not gameInfo.outcome and #(gameInfo.rolls or {}) < 2
             local multipleActiveGames = false
-            local anyGameHasChoice = false
             local allGamesHaveChoice = true
             local activeGamesCount = 0
+            local activePlayersWithChoice = {}
 
-
-            -- Verificar si hay múltiples juegos activos y si alguno tiene elección
+            -- Verificar si hay múltiples juegos activos y si todos tienen elección
             for _, game in ipairs(activeGames) do
                 if not game.outcome then
                     activeGamesCount = activeGamesCount + 1
                     if game.choice then
-                        anyGameHasChoice = true
+                        table.insert(activePlayersWithChoice, game.name)
                     else
                         allGamesHaveChoice = false
                     end
@@ -503,36 +510,36 @@ function ui:LoadUI()
 
             multipleActiveGames = activeGamesCount > 1
 
-
             currentGame:SetText(string.format("Current Game ('%s'):", gameInfo.outcome or "ACTIVE"))
             gamePlayer:SetText(string.format("Player: %s", gameInfo.name))
             gameBet:SetText(string.format("Bet: %s", C_CurrencyInfo.GetCoinText(gameInfo.bet)))
 
-            if isActive then
-                if multipleActiveGames then
-                    if anyGameHasChoice then
-                        -- Aplicar tiempo de gracia si al menos un juego tiene elección
-                        if not gameInfo.graceStartTime then
-                            gameInfo.graceStartTime = currentTime
-                        end
+            local function SayGoodLuck()
+                if #activePlayersWithChoice > 0 then
+                    local playerNames = table.concat(activePlayersWithChoice, " @")
+                    SendChatMessage("Rolling the dice, Good luck @" .. playerNames, "SAY")
+                    self.goodLuckSaid = true
+                end
+            end
 
-                        if currentTime - gameInfo.graceStartTime > GRACE_PERIOD then
-                            -- print("ui.goodLuckSaid:", ui.goodLuckSaid)
-                            -- if allGamesHaveChoice and not ui.goodLuckSaid then
-                            --     -- SayGoodLuck()
-                            --     -- ui.goodLuckSaid = true
-                            --     -- print("Good luck said and flag set")
-                            -- end
-                            if needsRoll then
-                                r, g, b = 0.8, 0, 0.8 -- Morado después del período de gracia
-                            else
-                                r, g, b = 1, 1, 1     -- Blanco si no necesita roll
+            if isActive then
+                if multipleActiveGames and not allGamesHaveChoice then
+                    -- Aplicar tiempo de gracia solo si no todos los juegos tienen elección
+                    if not gameInfo.graceStartTime then
+                        gameInfo.graceStartTime = currentTime
+                    end
+
+                    if currentTime - gameInfo.graceStartTime > GRACE_PERIOD then
+                        if needsRoll then
+                            r, g, b = 0.8, 0, 0.8 -- Morado después del período de gracia
+                            if not self.goodLuckSaid then
+                                SayGoodLuck()
                             end
                         else
-                            r, g, b = 1, 1, 1 -- Blanco durante el tiempo de gracia
+                            r, g, b = 1, 1, 1 -- Blanco si no necesita roll
                         end
                     else
-                        r, g, b = 1, 1, 1 -- Blanco si ningún juego tiene elección
+                        r, g, b = 1, 1, 1 -- Blanco durante el tiempo de gracia
                     end
                 else
                     if needsRoll then
@@ -542,8 +549,11 @@ function ui:LoadUI()
                         end
                         if currentTime - gameInfo.rollDelayStart > gameInfo.rollDelay then
                             r, g, b = 0.8, 0, 0.8 -- Morado después del retraso aleatorio
+                            if not self.goodLuckSaid then
+                                SayGoodLuck()
+                            end
                         else
-                            r, g, b = 1, 1, 1     -- Blanco durante el retraso
+                            r, g, b = 1, 1, 1 -- Blanco durante el retraso
                         end
                     else
                         r, g, b = 1, 1, 1 -- Blanco si no necesita roll
@@ -551,12 +561,13 @@ function ui:LoadUI()
                 end
             end
         else
-            ui:ResetGameFlags()
+            self:ResetGameFlags()
             currentGame:SetText("Current Game (No Game)")
             gamePlayer:SetText("Player: No game")
             gameBet:SetText("Bet: ???")
         end
 
+        -- Actualizar el color del marco
         if addon:GetGameVersion() == "Retail" then
             if mainFrame.TitleContainer then
                 mainFrame.TitleContainer:SetBackdropColor(r, g, b, a)
@@ -573,15 +584,6 @@ function ui:LoadUI()
                     mainFrame.NineSlice.TitleBg:SetColorTexture(r, g, b, a)
                 end
             end
-        end
-    end
-
-    function ui:ResetGameFlags()
-        ui.goodLuckSaid = false
-        for _, game in ipairs(activeGames) do
-            game.rollDelayStart = nil
-            game.rollDelay = nil
-            game.graceStartTime = nil -- Reiniciar el tiempo de gracia
         end
     end
 
